@@ -1,0 +1,25 @@
+node_modules/
+.env
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.tsbuildinfo
+# Source dirs — not needed in installed package, cause tar extraction errors
+client/
+server/
+scripts/
+.claude/
+skills-lock.json
+docker-compose.yml
+Dockerfile
+PLAN.md
+PUBLISHING.md
+# Old build output locations
+dist/
+client-dist/
+# Artifacts
+localchat-1.0.0.tgz
+localchat.js
+
