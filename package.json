@@ -5,12 +5,15 @@
   "bin": {
     "localchat": "./bin/localchat.js"
   },
+  "files": [
+    "bin/",
+    "lib/",
+    "public/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "build": "node scripts/build.js",
-    "start": "node server/dist/cli.js start",
-    "dev": "npm run dev:server & npm run dev:client",
-    "dev:client": "cd client && npm run dev",
-    "dev:server": "cd server && npm run dev"
+    "start": "node lib/cli.js start"
   },
   "keywords": [
     "chat",
