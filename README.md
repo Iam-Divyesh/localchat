@@ -1,4 +1,4 @@
-# 💬 LocalChat
+# LocalChat
 
 **LAN-only ephemeral chat and file sharing — no internet, no persistence, no installation for users.**
 
@@ -19,48 +19,40 @@ Open a browser, type your name, start chatting. Files and messages vanish when t
 
 ---
 
-## Quick Start
+## Install
 
-### Install from GitHub (recommended)
-
-Requires [Node.js 18+](https://nodejs.org/) and npm. No other setup needed.
+Requires [Node.js 22+](https://nodejs.org/).
 
 ```bash
-npm install -g github:your-github-username/localchat
-localchat start
-```
-
-Open your browser at the URL shown in the terminal (e.g. `http://192.168.1.50:3000`).
-
-Teammates on the same LAN just open that URL — no install required for them.
-
-### CLI commands
-
-```bash
-localchat start                    # Start on port 3000
-localchat start --port 80          # Start on port 80 (no port in URL)
-localchat start --persist          # Enable message persistence to disk
-localchat domain myteam            # Set mDNS name → http://myteam.local
-localchat config                   # Show current config
-localchat hardreset                # Delete all data and reset
-localchat clear-users              # Remove all accounts (keeps messages)
-localchat setup-port80             # (Windows) Print port 80 forwarding command
+npm install -g github:Iam-Divyesh/localchat
 ```
 
 ---
 
-### Run from source (development)
+## Usage
 
 ```bash
-git clone https://github.com/your-github-username/localchat
-cd localchat
+localchat start                  # Start on port 3000
+localchat start --port 80        # Start on port 80 (no port in URL)
+localchat start --persist        # Enable message persistence to disk
+localchat domain myteam          # Set mDNS name → http://myteam.local
+localchat port 8080              # Change default port
+localchat config                 # Show current config
+localchat clear-users            # Remove all accounts (keeps messages)
+localchat hardreset              # Delete all data and reset to factory defaults
+localchat setup-port80           # (Windows) Forward port 80 → 3000 via netsh
+```
 
-# Install dependencies
-cd server && npm install && cd ../client && npm install && cd ..
+Open the URL shown in the terminal (e.g. `http://192.168.1.50:3000`).
 
-# Start dev servers (two terminals)
-cd server && npm run dev     # Terminal 1
-cd client && npm run dev     # Terminal 2
+Teammates on the same LAN just open that URL — no install required on their end.
+
+---
+
+## Uninstall
+
+```bash
+npm uninstall -g localchat-app
 ```
 
 ---
@@ -70,13 +62,11 @@ cd client && npm run dev     # Terminal 2
 | Platform | How to access |
 |---|---|
 | macOS / Linux / iOS | `http://localchat.local:3000` (mDNS, automatic) |
-| Windows | Install [Bonjour Print Services](https://support.apple.com/kb/DL999) (free), then use `localchat.local` |
+| Windows | Install [Bonjour Print Services](https://support.apple.com/kb/DL999), then use `localchat.local` |
 | Android / any device | Scan the QR code at `http://<server-ip>:3000/qr` |
-| Everyone | Direct IP — shown in terminal on startup |
+| Everyone | Direct IP — printed in terminal on startup |
 
-### Recommended: Static DHCP reservation
-
-Reserve a fixed IP for your server machine in your router admin panel (DHCP → Static/Reserved leases → bind to MAC address). The IP never changes — teammates bookmark it once.
+**Tip:** Reserve a fixed IP for your server in your router's DHCP settings so teammates can bookmark it once and never update it.
 
 ---
 
@@ -86,7 +76,7 @@ Reserve a fixed IP for your server machine in your router admin panel (DHCP → 
 docker compose up --build
 ```
 
-> Note: `network_mode: host` is required for mDNS multicast and UDP broadcast to reach the LAN.
+> `network_mode: host` is required for mDNS multicast and UDP broadcast to work on the LAN.
 
 ---
 
@@ -104,109 +94,15 @@ All settings via environment variables (see `.env.example`):
 
 ---
 
-## Architecture
-
-```
-client/   React + Vite + Tailwind — browser UI
-server/   Node.js + Express + Socket.IO — LAN server
-
-No database. All state is in-memory.
-Server restart = all messages and files gone.
-```
-
-**File transfer flow:**
-1. Sender drags file → split into 64 KB chunks
-2. Chunks sent via Socket.IO binary frames
-3. Server buffers chunks in RAM
-4. File announced to room
-5. Recipients click download → chunks streamed to browser
-6. Browser assembles Blob → download triggered
-7. File cleared from RAM after 5 minutes or server restart
-
----
-
-## Project Structure
-
-```
-localchat/
-├── server/
-│   └── src/
-│       ├── index.ts              # Express + Socket.IO entry
-│       ├── config.ts             # Env config
-│       ├── socket/
-│       │   ├── chat.ts           # Chat event handlers
-│       │   └── files.ts          # File transfer handlers
-│       ├── store/
-│       │   └── rooms.ts          # In-memory state
-│       └── discovery/
-│           ├── mdns.ts           # Bonjour/mDNS announce
-│           └── udpBroadcast.ts   # UDP broadcast for discovery
-├── client/
-│   └── src/
-│       ├── App.tsx
-│       ├── components/           # UI components
-│       ├── hooks/                # Socket, chat, file hooks
-│       └── lib/                  # Socket client, file chunker
-├── docker-compose.yml
-├── Dockerfile
-├── .env.example
-├── LICENSE                       # MIT
-└── README.md
-```
-
----
-
-## Development
-
-Run server and client concurrently in dev mode:
-
-**Terminal 1 — Server:**
-```bash
-cd server && npm run dev
-```
-
-**Terminal 2 — Client (with HMR):**
-```bash
-cd client && npm run dev
-```
-
-Client dev server proxies `/socket.io`, `/discover`, and `/qr` to `localhost:3000`.
-
----
-
 ## Security
 
-- **LAN only** — bind to `0.0.0.0` but not exposed to internet (keep firewall rules in place)
+- **LAN only** — binds to `0.0.0.0` but not intended for internet exposure (keep firewall rules in place)
 - **No authentication** — the local network is the trust boundary
 - **No data persistence** — no logs, no database, no recovery vectors
-- **File validation** — size limits enforced server-side; files never executed
-- **Rate limiting** — add if needed for larger/untrusted networks
+- **File validation** — size limits enforced server-side; files are never executed
+- **Rate limiting** — add if needed for larger or untrusted networks
 
 For semi-trusted networks (shared office WiFi), consider adding room passwords or HTTPS with a self-signed certificate.
-
----
-
-## Contributing
-
-Contributions are welcome! This project is MIT licensed and open to everyone.
-
-1. Fork the repo
-2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Make your changes
-4. Open a Pull Request with a clear description
-
-### Ideas for contributions
-
-- [ ] Emoji picker
-- [ ] Image preview inline in chat
-- [ ] Pinned messages
-- [ ] Sound notifications
-- [ ] Room passwords
-- [ ] HTTPS / WSS support guide
-- [ ] dnsmasq / Pi-hole setup guide
-- [ ] Electron wrapper for desktop
-
-Please keep PRs focused. No new dependencies without discussion. No persistence features — session-only is a core design principle.
 
 ---
 
