@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  localchat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - PORT=${PORT:-3000}
+      - MAX_FILE_SIZE_MB=${MAX_FILE_SIZE_MB:-200}
+      - FILE_EXPIRY_MINUTES=${FILE_EXPIRY_MINUTES:-5}
+      - MDNS_NAME=${MDNS_NAME:-localchat}
+      - UDP_BROADCAST_PORT=${UDP_BROADCAST_PORT:-41234}
+    # host network is needed for mDNS multicast and UDP broadcast to work on LAN
+    network_mode: host
+    restart: unless-stopped
