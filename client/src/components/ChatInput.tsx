@@ -101,45 +101,36 @@ export default function ChatInput({
   };
 
   return (
-    <div className="px-6 pb-6 pt-2 relative z-10">
+    <div className="px-4 pb-5 pt-2 sm:px-6" style={{ background: "var(--bg)", flexShrink: 0 }}>
       {/* Reply preview */}
       {replyTo && (
-        <div 
-          className="flex items-center gap-3 mb-3 px-4 py-3 rounded-xl"
-          style={{ background: "var(--accent-dim)", borderLeft: "3px solid var(--accent)" }}
+        <div
+          className="flex items-center gap-3 mb-2 px-3 py-2 rounded-lg"
+          style={{ background: "var(--accent-light)", borderLeft: "3px solid var(--accent)" }}
         >
-          <CornerUpLeft className="w-4 h-4 flex-shrink-0" style={{ color: "var(--accent)" }} />
+          <CornerUpLeft className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--accent)" }} />
           <div className="flex-1 min-w-0">
-            <span className="text-sm font-semibold" style={{ color: "var(--accent)" }}>{replyTo.username}</span>
-            <p className="text-sm truncate" style={{ color: "var(--text-muted)" }}>{replyTo.text.slice(0, 80)}</p>
+            <span className="text-xs font-semibold" style={{ color: "var(--accent)" }}>{replyTo.username}</span>
+            <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{replyTo.text.slice(0, 80)}</p>
           </div>
-          <button 
-            onClick={onCancelReply} 
-            className="flex-shrink-0 p-1 rounded-lg transition-colors"
-            style={{ color: "var(--text-muted)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--error)")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
-          >
-            <X className="w-4 h-4" />
+          <button onClick={onCancelReply} className="icon-btn" style={{ width: "20px", height: "20px", flexShrink: 0 }}>
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
 
       {/* Upload progress */}
       {uploads.length > 0 && (
-        <div className="space-y-2 mb-3">
+        <div className="flex flex-col gap-1.5 mb-2">
           {uploads.map((u) => (
             <div key={u.fileId} className="flex items-center gap-3">
-              <div 
-                className="flex-1 rounded-full overflow-hidden" 
-                style={{ height: "4px", background: "rgba(255,255,255,0.1)" }}
-              >
-                <div 
+              <div className="flex-1 rounded-full overflow-hidden" style={{ height: "3px", background: "var(--border)" }}>
+                <div
                   className="h-full rounded-full transition-all duration-200"
-                  style={{ width: `${(u.sent / u.total) * 100}%`, background: "var(--accent)" }} 
+                  style={{ width: `${(u.sent / u.total) * 100}%`, background: "var(--accent)" }}
                 />
               </div>
-              <span className="text-sm truncate max-w-[150px]" style={{ color: "var(--text-muted)" }}>
+              <span className="text-xs truncate max-w-[150px]" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
                 {u.name}
               </span>
             </div>
@@ -147,40 +138,18 @@ export default function ChatInput({
         </div>
       )}
 
-      {/* Input bar - frosted glass */}
+      {/* Input bar */}
       <div
-        className="flex items-end gap-3 rounded-2xl px-4 py-3 transition-all duration-200 relative"
-        style={{
-          background: disabled 
-            ? "rgba(255,255,255,0.02)" 
-            : draggingOver 
-              ? "var(--accent-dim)" 
-              : "rgba(40, 40, 40, 0.6)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          border: `1px solid ${
-            disabled 
-              ? "var(--glass-border)" 
-              : draggingOver 
-                ? "var(--accent)" 
-                : focused 
-                  ? "rgba(255,255,255,0.15)" 
-                  : "var(--glass-border)"
-          }`,
-          opacity: disabled ? 0.5 : 1,
-          cursor: disabled ? "not-allowed" : undefined,
-        }}
+        className={`chat-input-wrap${draggingOver ? " drag-over" : ""}`}
+        style={{ opacity: disabled ? 0.6 : 1, position: "relative" }}
         onDragEnter={onDragEnter}
         onDragLeave={onDragLeave}
         onDragOver={onDragOver}
         onDrop={onDrop}
       >
-        {/* Drag overlay */}
         {draggingOver && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-2xl pointer-events-none z-10">
-            <span className="text-sm font-medium" style={{ color: "var(--accent)" }}>
-              Drop files to attach
-            </span>
+          <div className="absolute inset-0 flex items-center justify-center rounded-lg pointer-events-none z-10">
+            <span className="text-sm font-medium" style={{ color: "var(--accent)" }}>Drop files to attach</span>
           </div>
         )}
 
@@ -190,24 +159,18 @@ export default function ChatInput({
             type="button"
             onClick={() => setShowEmoji((v) => !v)}
             disabled={disabled}
-            className="flex items-center justify-center w-9 h-9 rounded-xl transition-all flex-shrink-0"
-            style={{ 
-              color: showEmoji ? "var(--accent)" : "var(--text-muted)",
-              background: showEmoji ? "var(--accent-dim)" : "transparent",
-            }}
-            onMouseEnter={(e) => !disabled && (e.currentTarget.style.color = "var(--accent)")}
-            onMouseLeave={(e) => !disabled && !showEmoji && (e.currentTarget.style.color = "var(--text-muted)")}
+            className="icon-btn flex-shrink-0"
+            style={{ color: showEmoji ? "var(--accent)" : "var(--text-muted)", background: showEmoji ? "var(--accent-light)" : "transparent" }}
           >
-            <Smile className="w-5 h-5" />
+            <Smile className="w-4 h-4" />
           </button>
-          
           {showEmoji && (
             <div ref={emojiRef} className="absolute bottom-full left-0 mb-2 z-50">
               <EmojiPicker
-                theme={Theme.DARK}
+                theme={Theme.LIGHT}
                 onEmojiClick={handleEmojiClick}
-                width={320}
-                height={400}
+                width={300}
+                height={380}
                 searchDisabled={false}
                 skinTonesDisabled
                 lazyLoadEmojis
@@ -223,13 +186,10 @@ export default function ChatInput({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={disabled}
-              className="flex items-center justify-center w-9 h-9 rounded-xl transition-all flex-shrink-0"
-              style={{ color: "var(--text-muted)" }}
-              onMouseEnter={(e) => !disabled && (e.currentTarget.style.color = "var(--accent)")}
-              onMouseLeave={(e) => !disabled && (e.currentTarget.style.color = "var(--text-muted)")}
+              className="icon-btn flex-shrink-0"
               title="Attach file"
             >
-              <Paperclip className="w-5 h-5" />
+              <Paperclip className="w-4 h-4" />
             </button>
             <input
               ref={fileInputRef}
@@ -261,26 +221,23 @@ export default function ChatInput({
           }}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          placeholder={draggingOver ? "" : (placeholder ?? "Messages")}
-          className="flex-1 bg-transparent text-sm resize-none focus:outline-none leading-relaxed max-h-[120px] overflow-y-auto py-1.5"
-          style={{ color: "#fff", opacity: draggingOver ? 0 : 1 }}
+          placeholder={draggingOver ? "" : (placeholder ?? "Message…")}
+          className="flex-1 bg-transparent text-sm resize-none focus:outline-none leading-relaxed max-h-[120px] overflow-y-auto py-1"
+          style={{ color: "var(--text-primary)", opacity: draggingOver ? 0 : 1, fontFamily: "var(--font-ui)", caretColor: "var(--accent)" }}
         />
 
         {/* Send button */}
         <button
           onClick={submit}
           disabled={!text.trim() || disabled}
-          className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200"
-          style={{
-            background: text.trim() ? "var(--accent)" : "rgba(255,255,255,0.06)",
-            color: text.trim() ? "#fff" : "var(--text-muted)",
-            cursor: text.trim() && !disabled ? "pointer" : "not-allowed",
-            boxShadow: text.trim() ? "0 0 20px var(--accent-glow)" : "none",
-          }}
+          className="send-btn flex-shrink-0"
         >
-          <Send className="w-4 h-4" />
+          <Send className="w-3.5 h-3.5 text-white" />
         </button>
       </div>
+      <p className="mt-1.5 text-right" style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--text-dim)" }}>
+        Enter to send · Shift+Enter for new line
+      </p>
     </div>
   );
 }

@@ -34,7 +34,7 @@ function loadConfig(): LocalChatConfig {
   } catch {
     return {
       mdnsName: "localchat",
-      port: 1234,
+      port: 5001,
       persist: false,
       dataDir: path.join(os.homedir(), ".localchat"),
     };

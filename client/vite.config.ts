@@ -21,16 +21,17 @@ export default defineConfig({
     },
   },
   server: {
+    port: 3000,
     host: true,
     allowedHosts: ["localchat.local"],
     proxy: {
-      "/api": "http://localhost:1552",
+      "/api": "http://localhost:5001",
       "/socket.io": {
-        target: "http://localhost:1552",
+        target: "http://localhost:5001",
         ws: true,
       },
-      "/discover": "http://localhost:1552",
-      "/qr": "http://localhost:1552",
+      "/discover": "http://localhost:5001",
+      "/qr": "http://localhost:5001",
     },
   },
 });

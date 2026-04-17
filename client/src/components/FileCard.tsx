@@ -56,11 +56,11 @@ function ImageCard({ file, onDownload, onFetchBlob }: Props) {
 
   return (
     <>
-      <div 
+      <div
         className="rounded-2xl overflow-hidden max-w-[280px] animate-fade-in"
-        style={{ background: "rgba(40, 40, 40, 0.6)", border: "1px solid var(--glass-border)" }}
+        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
       >
-        <div className="relative w-full" style={{ minHeight: "100px", background: "rgba(0,0,0,0.3)" }}>
+        <div className="relative w-full" style={{ minHeight: "100px", background: "var(--bg)" }}>
           {loadState === "ready" && previewUrl ? (
             <>
               <img
@@ -70,12 +70,12 @@ function ImageCard({ file, onDownload, onFetchBlob }: Props) {
                 style={{ maxHeight: "200px", display: "block" }}
                 onClick={() => setLightbox(true)}
               />
-              <div 
+              <div
                 className="absolute top-2 right-2 rounded-lg p-1.5 opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
-                style={{ background: "rgba(0,0,0,0.6)" }}
+                style={{ background: "rgba(0,0,0,0.5)" }}
                 onClick={() => setLightbox(true)}
               >
-                <ZoomIn className="w-4 h-4" style={{ color: "var(--accent)" }} />
+                <ZoomIn className="w-4 h-4" style={{ color: "#fff" }} />
               </div>
             </>
           ) : (
@@ -94,13 +94,13 @@ function ImageCard({ file, onDownload, onFetchBlob }: Props) {
                 </>
               ) : (
                 <>
-                  <div 
+                  <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center"
-                    style={{ background: "var(--accent-dim)", border: "1px solid var(--accent)" }}
+                    style={{ background: "var(--accent-light)", border: "1px solid var(--accent-mid)" }}
                   >
                     <Image className="w-6 h-6" style={{ color: "var(--accent)" }} />
                   </div>
-                  <span className="text-xs" style={{ color: isExpired ? "var(--text-muted)" : "var(--text-secondary)" }}>
+                  <span className="text-xs" style={{ color: isExpired ? "var(--text-dim)" : "var(--text-muted)", fontFamily: "var(--font-ui)" }}>
                     {isExpired ? "Expired" : "Click to preview"}
                   </span>
                 </>
@@ -109,13 +109,13 @@ function ImageCard({ file, onDownload, onFetchBlob }: Props) {
           )}
         </div>
 
-        <div 
+        <div
           className="flex items-center gap-3 px-4 py-3"
-          style={{ borderTop: "1px solid var(--glass-border)" }}
+          style={{ borderTop: "1px solid var(--border-soft)" }}
         >
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate" style={{ color: "#fff" }}>{file.name}</p>
-            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+            <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)", fontFamily: "var(--font-ui)" }}>{file.name}</p>
+            <p className="text-xs" style={{ color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>
               {formatBytes(file.size)} · {formatTime(file.timestamp)}
             </p>
           </div>
@@ -124,10 +124,10 @@ function ImageCard({ file, onDownload, onFetchBlob }: Props) {
             disabled={dlState !== "idle" || isExpired}
             className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all"
             style={isExpired
-              ? { background: "rgba(255,255,255,0.03)", color: "var(--text-muted)", cursor: "not-allowed" }
-              : dlState === "done" ? { background: "rgba(74, 222, 128, 0.15)", color: "var(--success)" }
-              : dlState === "error" ? { background: "rgba(248, 113, 113, 0.15)", color: "var(--error)" }
-              : dlState === "loading" ? { background: "var(--accent-dim)", color: "var(--accent)", cursor: "wait" }
+              ? { background: "var(--border-soft)", color: "var(--text-dim)", cursor: "not-allowed" }
+              : dlState === "done" ? { background: "var(--accent-light)", color: "var(--accent)" }
+              : dlState === "error" ? { background: "#FEE2E2", color: "var(--error)" }
+              : dlState === "loading" ? { background: "var(--accent-light)", color: "var(--accent)", cursor: "wait" }
               : { background: "var(--accent)", color: "#fff" }
             }
           >
@@ -144,7 +144,7 @@ function ImageCard({ file, onDownload, onFetchBlob }: Props) {
       {lightbox && previewUrl && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-6 cursor-zoom-out"
-          style={{ background: "rgba(0,0,0,0.9)", backdropFilter: "blur(8px)" }}
+          style={{ background: "rgba(0,0,0,0.85)" }}
           onClick={() => setLightbox(false)}
         >
           <img
@@ -156,14 +156,14 @@ function ImageCard({ file, onDownload, onFetchBlob }: Props) {
           />
           <button
             className="absolute top-4 right-4 p-2 rounded-xl transition-colors"
-            style={{ background: "rgba(255,255,255,0.1)", color: "#fff" }}
+            style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}
             onClick={() => setLightbox(false)}
           >
             <X className="w-5 h-5" />
           </button>
-          <p 
+          <p
             className="absolute bottom-4 left-1/2 -translate-x-1/2 text-sm px-4 py-2 rounded-xl"
-            style={{ background: "rgba(0,0,0,0.6)", color: "var(--text-secondary)" }}
+            style={{ background: "rgba(0,0,0,0.6)", color: "rgba(255,255,255,0.8)", fontFamily: "var(--font-mono)" }}
           >
             {file.name} · {formatBytes(file.size)}
           </p>
@@ -207,9 +207,9 @@ function PdfCard({ file, onDownload, onFetchBlob }: Props) {
   };
 
   return (
-    <div 
+    <div
       className="rounded-2xl overflow-hidden max-w-[320px] animate-fade-in"
-      style={{ background: "rgba(40, 40, 40, 0.6)", border: "1px solid var(--glass-border)" }}
+      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
     >
       {loadState === "ready" && pdfUrl ? (
         <iframe
@@ -234,13 +234,13 @@ function PdfCard({ file, onDownload, onFetchBlob }: Props) {
             </>
           ) : (
             <>
-              <div 
+              <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ background: "var(--accent-dim)", border: "1px solid var(--accent)" }}
+                style={{ background: "var(--accent-light)", border: "1px solid var(--accent-mid)" }}
               >
                 <FileText className="w-6 h-6" style={{ color: "var(--accent)" }} />
               </div>
-              <span className="text-xs" style={{ color: isExpired ? "var(--text-muted)" : "var(--text-secondary)" }}>
+              <span className="text-xs" style={{ color: isExpired ? "var(--text-dim)" : "var(--text-muted)", fontFamily: "var(--font-ui)" }}>
                 {isExpired ? "Expired" : "Click to preview PDF"}
               </span>
             </>
@@ -248,13 +248,13 @@ function PdfCard({ file, onDownload, onFetchBlob }: Props) {
         </button>
       )}
 
-      <div 
+      <div
         className="flex items-center gap-3 px-4 py-3"
-        style={{ borderTop: "1px solid var(--glass-border)" }}
+        style={{ borderTop: "1px solid var(--border-soft)" }}
       >
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate" style={{ color: "#fff" }}>{file.name}</p>
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+          <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)", fontFamily: "var(--font-ui)" }}>{file.name}</p>
+          <p className="text-xs" style={{ color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>
             {formatBytes(file.size)} · PDF · {formatTime(file.timestamp)}
           </p>
         </div>
@@ -263,10 +263,10 @@ function PdfCard({ file, onDownload, onFetchBlob }: Props) {
           disabled={dlState !== "idle" || isExpired}
           className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all"
           style={isExpired
-            ? { background: "rgba(255,255,255,0.03)", color: "var(--text-muted)", cursor: "not-allowed" }
-            : dlState === "done" ? { background: "rgba(74, 222, 128, 0.15)", color: "var(--success)" }
-            : dlState === "error" ? { background: "rgba(248, 113, 113, 0.15)", color: "var(--error)" }
-            : dlState === "loading" ? { background: "var(--accent-dim)", color: "var(--accent)", cursor: "wait" }
+            ? { background: "var(--border-soft)", color: "var(--text-dim)", cursor: "not-allowed" }
+            : dlState === "done" ? { background: "var(--accent-light)", color: "var(--accent)" }
+            : dlState === "error" ? { background: "#FEE2E2", color: "var(--error)" }
+            : dlState === "loading" ? { background: "var(--accent-light)", color: "var(--accent)", cursor: "wait" }
             : { background: "var(--accent)", color: "#fff" }
           }
         >
@@ -307,19 +307,19 @@ export default function FileCard({ file, onDownload, onFetchBlob }: Props) {
   };
 
   return (
-    <div 
+    <div
       className="flex items-center gap-4 rounded-2xl px-4 py-4 max-w-[280px] animate-fade-in"
-      style={{ background: "rgba(40, 40, 40, 0.6)", border: "1px solid var(--glass-border)" }}
+      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
     >
-      <div 
+      <div
         className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ background: "var(--accent-dim)", border: "1px solid var(--accent)", color: "var(--accent)" }}
+        style={{ background: "var(--accent-light)", border: "1px solid var(--accent-mid)", color: "var(--accent)" }}
       >
         <FileIcon mime={file.mimeType} className="w-5 h-5" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate" style={{ color: "#fff" }}>{file.name}</p>
-        <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+        <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)", fontFamily: "var(--font-ui)" }}>{file.name}</p>
+        <p className="text-xs mt-0.5" style={{ color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>
           {formatBytes(file.size)} · {formatTime(file.timestamp)}{isExpired && " · expired"}
         </p>
       </div>
@@ -328,10 +328,10 @@ export default function FileCard({ file, onDownload, onFetchBlob }: Props) {
         disabled={state !== "idle" || isExpired}
         className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all"
         style={isExpired
-          ? { background: "rgba(255,255,255,0.03)", color: "var(--text-muted)", cursor: "not-allowed" }
-          : state === "done" ? { background: "rgba(74, 222, 128, 0.15)", color: "var(--success)" }
-          : state === "error" ? { background: "rgba(248, 113, 113, 0.15)", color: "var(--error)" }
-          : state === "loading" ? { background: "var(--accent-dim)", color: "var(--accent)", cursor: "wait" }
+          ? { background: "var(--border-soft)", color: "var(--text-dim)", cursor: "not-allowed" }
+          : state === "done" ? { background: "var(--accent-light)", color: "var(--accent)" }
+          : state === "error" ? { background: "#FEE2E2", color: "var(--error)" }
+          : state === "loading" ? { background: "var(--accent-light)", color: "var(--accent)", cursor: "wait" }
           : { background: "var(--accent)", color: "#fff" }
         }
       >

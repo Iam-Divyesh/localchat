@@ -15,30 +15,41 @@ export default function UserProfileModal({ username, email, online, onClose }: P
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
+  const colors = [
+    { bg: "#EFF4FF", fg: "#2563EB" },
+    { bg: "#FEF3C7", fg: "#B45309" },
+    { bg: "#FCE7F3", fg: "#BE185D" },
+    { bg: "#E0F2FE", fg: "#0369A1" },
+    { bg: "#F0FDF4", fg: "#15803D" },
+  ];
+  const av = colors[username.charCodeAt(0) % colors.length];
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)" }}
+      style={{ background: "rgba(0,0,0,0.4)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-80 rounded-2xl overflow-hidden glass-card animate-slide-up">
+      <div
+        className="w-80 rounded-2xl overflow-hidden animate-slide-up"
+        style={{ background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 20px 60px rgba(0,0,0,0.12)" }}
+      >
         {/* Avatar banner */}
-        <div className="relative h-24" style={{ background: "var(--accent-dim)" }}>
-          <button 
+        <div className="relative h-20" style={{ background: av.bg }}>
+          <button
             onClick={onClose}
-            className="absolute top-3 right-3 p-2 rounded-lg transition-colors"
-            style={{ background: "rgba(0,0,0,0.3)", color: "var(--text-secondary)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}
+            className="absolute top-3 right-3 icon-btn"
+            style={{ width: "28px", height: "28px" }}
           >
             <X className="w-4 h-4" />
           </button>
-          <div 
+          <div
             className="absolute -bottom-10 left-6 w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-bold"
-            style={{ 
-              background: "var(--accent)", 
-              color: "#fff",
-              border: "4px solid #1a1a1a",
+            style={{
+              background: av.bg,
+              color: av.fg,
+              border: `3px solid var(--surface)`,
+              boxShadow: "0 2px 12px rgba(0,0,0,0.1)",
             }}
           >
             {username[0]?.toUpperCase()}
@@ -47,40 +58,41 @@ export default function UserProfileModal({ username, email, online, onClose }: P
 
         {/* Content */}
         <div className="pt-14 pb-6 px-6">
-          <div className="flex items-center gap-2 mb-4">
-            <h3 className="font-semibold text-xl" style={{ color: "#fff" }}>{username}</h3>
-            <span 
-              className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-full"
-              style={{ 
-                background: online ? "rgba(74, 222, 128, 0.1)" : "rgba(255,255,255,0.05)",
-                color: online ? "var(--success)" : "var(--text-muted)",
+          <div className="flex items-center gap-2 mb-5">
+            <h3 className="font-semibold text-xl" style={{ color: "var(--text-primary)", fontFamily: "var(--font-ui)" }}>{username}</h3>
+            <span
+              className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
+              style={{
+                background: online ? "var(--accent-light)" : "var(--border-soft)",
+                color: online ? "var(--accent)" : "var(--text-dim)",
+                border: `1px solid ${online ? "var(--accent-mid)" : "var(--border)"}`,
               }}
             >
-              <Circle className="w-2 h-2" fill="currentColor" />
+              <Circle className="w-1.5 h-1.5" fill="currentColor" />
               {online ? "Online" : "Offline"}
             </span>
           </div>
 
-          <div className="space-y-3">
-            <div 
+          <div className="space-y-2">
+            <div
               className="flex items-center gap-3 py-3 px-4 rounded-xl"
-              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)" }}
+              style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
             >
-              <User className="w-4 h-4 flex-shrink-0" style={{ color: "var(--text-muted)" }} />
+              <User className="w-4 h-4 flex-shrink-0" style={{ color: "var(--text-dim)" }} />
               <div>
-                <p className="text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Username</p>
-                <p className="text-sm" style={{ color: "#fff" }}>{username}</p>
+                <p className="text-xs uppercase tracking-wider mb-0.5" style={{ color: "var(--text-dim)", fontFamily: "var(--font-mono)", fontSize: "10px" }}>Username</p>
+                <p className="text-sm" style={{ color: "var(--text-primary)", fontFamily: "var(--font-ui)" }}>{username}</p>
               </div>
             </div>
             {email && (
-              <div 
+              <div
                 className="flex items-center gap-3 py-3 px-4 rounded-xl"
-                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)" }}
+                style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
               >
-                <Mail className="w-4 h-4 flex-shrink-0" style={{ color: "var(--text-muted)" }} />
+                <Mail className="w-4 h-4 flex-shrink-0" style={{ color: "var(--text-dim)" }} />
                 <div>
-                  <p className="text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Email</p>
-                  <p className="text-sm" style={{ color: "#fff" }}>{email}</p>
+                  <p className="text-xs uppercase tracking-wider mb-0.5" style={{ color: "var(--text-dim)", fontFamily: "var(--font-mono)", fontSize: "10px" }}>Email</p>
+                  <p className="text-sm" style={{ color: "var(--text-primary)", fontFamily: "var(--font-ui)" }}>{email}</p>
                 </div>
               </div>
             )}

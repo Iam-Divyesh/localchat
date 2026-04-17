@@ -38,16 +38,17 @@ export default function SearchModal({ onSearch, onNavigate, onClose }: Props) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-24"
-      style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)" }}
+      style={{ background: "rgba(0,0,0,0.4)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div 
-        className="w-full max-w-xl mx-4 rounded-2xl overflow-hidden glass-card animate-slide-up"
+      <div
+        className="w-full max-w-xl mx-4 rounded-2xl overflow-hidden animate-slide-up"
+        style={{ background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}
       >
         {/* Search input */}
-        <div 
+        <div
           className="flex items-center gap-4 px-5 py-4"
-          style={{ borderBottom: "1px solid var(--glass-border)" }}
+          style={{ borderBottom: "1px solid var(--border)" }}
         >
           <Search className="w-5 h-5 flex-shrink-0" style={{ color: "var(--text-muted)" }} />
           <input
@@ -56,29 +57,27 @@ export default function SearchModal({ onSearch, onNavigate, onClose }: Props) {
             onChange={(e) => handleChange(e.target.value)}
             placeholder="Search messages…"
             className="flex-1 bg-transparent text-base focus:outline-none"
-            style={{ color: "#fff" }}
+            style={{ color: "var(--text-primary)", fontFamily: "var(--font-ui)" }}
           />
           {searching && <div className="spinner" style={{ width: "20px", height: "20px" }} />}
-          <button 
-            onClick={onClose} 
-            className="p-1 rounded-lg transition-colors"
-            style={{ color: "var(--text-muted)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
+          <button
+            onClick={onClose}
+            className="icon-btn"
+            style={{ width: "28px", height: "28px" }}
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Results */}
         <div className="max-h-96 overflow-y-auto">
           {results.length === 0 && query.trim() && !searching && (
-            <p className="px-5 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
+            <p className="px-5 py-8 text-center text-sm" style={{ color: "var(--text-muted)", fontFamily: "var(--font-ui)" }}>
               No messages found for "{query}"
             </p>
           )}
           {results.length === 0 && !query.trim() && (
-            <p className="px-5 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
+            <p className="px-5 py-8 text-center text-sm" style={{ color: "var(--text-muted)", fontFamily: "var(--font-ui)" }}>
               Type to search across all channels
             </p>
           )}
@@ -87,20 +86,20 @@ export default function SearchModal({ onSearch, onNavigate, onClose }: Props) {
               key={msg.id}
               onClick={() => { onNavigate(room); onClose(); }}
               className="w-full flex items-start gap-4 px-5 py-4 text-left transition-colors"
-              style={{ borderBottom: "1px solid var(--glass-border)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
+              style={{ borderBottom: "1px solid var(--border-soft)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--accent-light)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
-              <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5" style={{ color: "var(--text-muted)" }}>
-                <Hash className="w-4 h-4" />
-                <span className="text-xs">{room}</span>
+              <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5" style={{ color: "var(--text-dim)" }}>
+                <Hash className="w-3.5 h-3.5" />
+                <span className="text-xs" style={{ fontFamily: "var(--font-mono)" }}>{room}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-semibold" style={{ color: "var(--accent)" }}>{msg.username}</span>
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>{formatTime(msg.timestamp)}</span>
+                  <span className="text-sm font-semibold" style={{ color: "var(--accent)", fontFamily: "var(--font-ui)" }}>{msg.username}</span>
+                  <span className="text-xs" style={{ color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>{formatTime(msg.timestamp)}</span>
                 </div>
-                <p className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>{msg.text}</p>
+                <p className="text-sm truncate" style={{ color: "var(--text-muted)", fontFamily: "var(--font-ui)" }}>{msg.text}</p>
               </div>
             </button>
           ))}

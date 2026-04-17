@@ -50,12 +50,12 @@ function CtxItem({ icon, label, onClick, success, danger }: {
     <button
       onClick={onClick}
       className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors"
-      style={{ color: success ? "var(--success)" : danger ? "var(--error)" : "var(--text-secondary)" }}
-      onMouseEnter={(e) => { 
-        e.currentTarget.style.background = danger ? "rgba(248,113,113,0.1)" : "rgba(255,255,255,0.05)"; 
+      style={{ color: success ? "var(--success)" : danger ? "var(--error)" : "var(--text-muted)" }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = danger ? "#FEF2F2" : "var(--border-soft)";
       }}
-      onMouseLeave={(e) => { 
-        e.currentTarget.style.background = "transparent"; 
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "transparent";
       }}
     >
       {icon}
@@ -87,7 +87,7 @@ function MsgContent({ text, isMe }: { text: string; isMe: boolean }) {
               <code
                 className="px-1.5 py-0.5 rounded text-sm"
                 style={{
-                  background: isMe ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.1)",
+                  background: "var(--border-soft)",
                   color: "var(--accent)",
                 }}
               >
@@ -99,7 +99,8 @@ function MsgContent({ text, isMe }: { text: string; isMe: boolean }) {
             <pre
               className="rounded-xl p-3 text-sm my-2 overflow-x-auto"
               style={{
-                background: isMe ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.4)",
+                background: "var(--bg)",
+                border: "1px solid var(--border)",
                 color: "var(--text-primary)",
               }}
             >
@@ -225,7 +226,7 @@ const MsgBubble = memo(function MsgBubble({
       <div className="flex justify-center my-3 animate-fade-in">
         <span 
           className="text-xs px-4 py-1.5 rounded-full"
-          style={{ background: "rgba(255,255,255,0.05)", color: "var(--text-muted)" }}
+          style={{ background: "var(--border-soft)", color: "var(--text-muted)" }}
         >
           {msg.text}
         </span>
@@ -247,19 +248,19 @@ const MsgBubble = memo(function MsgBubble({
         <button
           onClick={() => onProfileClick?.(msg.username)}
           className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 mr-3 mt-1"
-          style={{ background: "rgba(255,255,255,0.1)", color: "#fff" }}
+          style={{ background: "var(--accent-light)", color: "var(--accent)" }}
         >
           {msg.username[0]?.toUpperCase()}
         </button>
       )}
 
-      <div className={`flex flex-col ${isMe ? "items-end" : "items-start"}`} style={{ maxWidth: "70%" }}>
+      <div className={`flex flex-col ${isMe ? "items-end" : "items-start"}`} style={{ maxWidth: "75%", minWidth: 0, overflow: "hidden" }}>
         {/* Username and time for others */}
         {!isMe && (
           <div className="flex items-center gap-2 mb-1 ml-1">
             <button
               className="text-sm font-medium hover:underline"
-              style={{ color: "#fff" }}
+              style={{ color: "var(--text-primary)" }}
               onClick={() => onProfileClick?.(msg.username)}
             >
               {msg.username}
@@ -274,7 +275,7 @@ const MsgBubble = memo(function MsgBubble({
         {msg.replyTo && (
           <div 
             className="flex items-center gap-2 mb-1 px-3 py-1.5 rounded-xl max-w-full"
-            style={{ background: "var(--accent-dim)", borderLeft: "2px solid var(--accent)" }}
+            style={{ background: "var(--accent-light)", borderLeft: "2px solid var(--accent)" }}
           >
             <span className="text-xs font-semibold" style={{ color: "var(--accent)" }}>
               {msg.replyTo.username}
@@ -288,7 +289,7 @@ const MsgBubble = memo(function MsgBubble({
         {/* Message bubble */}
         <div className="relative">
           <div
-            className={`msg-bubble ${isMe ? "msg-bubble-me" : "msg-bubble-other"} text-sm`}
+            className={`bubble ${isMe ? "bubble-out" : "bubble-in"} text-sm`}
             onContextMenu={handleContextMenu}
             style={{ cursor: "context-menu" }}
           >
@@ -342,8 +343,8 @@ const MsgBubble = memo(function MsgBubble({
         {/* Context menu */}
         {ctxMenu && createPortal(
           <div
-            className="fixed z-[9999] rounded-xl overflow-hidden py-1 glass-card"
-            style={{ left: ctxMenu.x, top: ctxMenu.y, minWidth: "160px" }}
+            className="fixed z-[9999] rounded-xl overflow-hidden py-1"
+            style={{ left: ctxMenu.x, top: ctxMenu.y, minWidth: "160px", background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 4px 20px rgba(0,0,0,0.12)" }}
             onMouseDown={(e) => e.stopPropagation()}
           >
             <CtxItem 
@@ -366,7 +367,7 @@ const MsgBubble = memo(function MsgBubble({
             )}
             {isMe && onDelete && (
               <>
-                <div style={{ height: "1px", background: "var(--glass-border)", margin: "4px 12px" }} />
+                <div style={{ height: "1px", background: "var(--border)", margin: "4px 12px" }} />
                 <CtxItem 
                   icon={<Trash2 className="w-4 h-4" />} 
                   label="Delete" 
@@ -388,9 +389,9 @@ const MsgBubble = memo(function MsgBubble({
                 onClick={() => onReact(msg.id, emoji)}
                 className="flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-all"
                 style={{
-                  background: users.includes(currentUser) ? "var(--accent-dim)" : "rgba(255,255,255,0.06)",
-                  border: `1px solid ${users.includes(currentUser) ? "var(--accent)" : "var(--glass-border)"}`,
-                  color: users.includes(currentUser) ? "var(--accent)" : "var(--text-secondary)",
+                  background: users.includes(currentUser) ? "var(--accent-light)" : "var(--border-soft)",
+                  border: `1px solid ${users.includes(currentUser) ? "var(--accent)" : "var(--border)"}`,
+                  color: users.includes(currentUser) ? "var(--accent)" : "var(--text-muted)",
                 }}
                 title={users.join(", ")}
               >
@@ -440,14 +441,14 @@ export default function MessageList({
         <div className="flex-1 flex flex-col items-center justify-center select-none">
           <div 
             className="w-16 h-16 rounded-2xl mb-4 flex items-center justify-center"
-            style={{ background: "var(--accent-dim)", border: "1px solid var(--accent)" }}
+            style={{ background: "var(--accent-light)", border: "1px solid var(--accent-mid)" }}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2">
               <rect width="18" height="14" x="3" y="3" rx="2"/>
               <path d="m3 17 4-4h10"/>
             </svg>
           </div>
-          <p className="text-base font-medium" style={{ color: "var(--text-secondary)" }}>No messages yet</p>
+          <p className="text-base font-medium" style={{ color: "var(--text-muted)" }}>No messages yet</p>
           <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>Be the first to say something</p>
         </div>
       )}
@@ -458,7 +459,8 @@ export default function MessageList({
           <button
             onClick={handleLoadMore}
             disabled={loadingMore}
-            className="text-sm px-4 py-2 rounded-full btn-glass"
+            className="text-sm px-4 py-2 rounded-full"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)", fontFamily: "var(--font-ui)", cursor: "pointer" }}
           >
             {loadingMore ? "Loading…" : "Load older messages"}
           </button>
@@ -476,7 +478,7 @@ export default function MessageList({
             <div 
               key={msg.id} 
               className="flex items-baseline gap-3 py-2 px-3 rounded-lg animate-fade-in"
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.02)")}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--border-soft)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
               <span className="text-xs flex-shrink-0 tabular-nums" style={{ color: "var(--text-muted)" }}>
@@ -513,10 +515,10 @@ export default function MessageList({
       {otherTyping.length > 0 && (
         <div className="flex items-center gap-3 mt-3 animate-fade-in">
           <div 
-            className="msg-bubble msg-bubble-other flex items-center gap-2"
+            className="bubble bubble-in flex items-center gap-2"
             style={{ padding: "10px 16px" }}
           >
-            <span className="text-sm" style={{ color: "var(--text-secondary)" }}>
+            <span className="text-sm" style={{ color: "var(--text-muted)" }}>
               {otherTyping.join(", ")}
             </span>
             <TypingDots />

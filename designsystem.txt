@@ -1,0 +1,8 @@
+Here's LocalChat rebuilt from scratch under "Confident Clarity." Every decision maps to a principle:
+What changed and why:
+Surfaces — Glassmorphism replaced with solid, differentiated layers: #F2F1ED sidebar (warm grey, quality notepad feel), #FFFFFF chat bubbles (crisp, readable), #FAFAF8 main background. Three surfaces, clearly hierarchical, zero blur gimmicks.
+Typography — Instrument Serif italic for section labels ("Channels", "Messages", "Online · 2") gives them editorial gravity without weight. DM Sans handles all interface work cleanly. JetBrains Mono is reserved strictly for timestamps, the LIVE badge, verdict numbers, and the date divider — technical credibility exactly where data appears.
+Color discipline — #2563EB touches four things only: active channel indicator bar, active channel background tint, outgoing bubbles, and the send button. Everything else is semantic or neutral. The green online dot and LIVE pill are success-semantic only.
+Spacing — 32px top padding before messages, 24px between sections in the sidebar, 16px between message groups, 4–8px within components. The large gaps are doing as much work as the tight ones.
+Verdict list in the bubble — the numbered items use JetBrains Mono chips for the numbers (data values), clean left-aligned text for the copy. Section tags in mono uppercase at 10px — scannable at a glance, not competing with content.
+Input area — focus state adds a 3px soft blue ring and border color shift. Keyboard hint in mono below. No decoration, full clarity.

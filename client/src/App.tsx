@@ -234,7 +234,7 @@ export default function App() {
 
   if (appState === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg-base)" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)" }}>
         <div className="spinner" />
       </div>
     );
@@ -265,14 +265,7 @@ export default function App() {
     : isDm ? "Direct message · session only" : "Channel · messages not stored on internet";
 
   return (
-    <div
-      className="flex h-screen overflow-hidden relative"
-      style={{ background: "#0a0a0a", color: "#fff" }}
-    >
-      {/* Depth blob for 3D glass effect */}
-      <div className="depth-blob" />
-      <div className="ambient-glow" />
-      <div className="ambient-glow-2" />
+    <div className="flex h-screen overflow-hidden" style={{ background: "var(--bg)", color: "var(--text-primary)" }}>
 
       {showSearch && (
         <SearchModal
@@ -305,7 +298,7 @@ export default function App() {
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-30 md:hidden"
-          style={{ background: "rgba(0,0,0,0.5)" }}
+          style={{ background: "rgba(0,0,0,0.4)" }}
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -336,34 +329,38 @@ export default function App() {
         />
       </div>
 
-      <main className="flex-1 flex flex-col overflow-hidden min-w-0 relative z-10">
-        {/* Channel/DM header - glass panel */}
-        <div 
-          className="flex items-center gap-3 px-4 py-3 glass-panel"
-          style={{ borderBottom: "1px solid var(--glass-border)" }}
+      <main className="flex-1 flex flex-col overflow-hidden min-w-0">
+        {/* Channel/DM header */}
+        <div
+          className="flex items-center gap-3 px-5 py-3.5 flex-shrink-0"
+          style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}
         >
           {/* Hamburger — mobile only */}
           <button
-            className="md:hidden flex-shrink-0 p-2 rounded-xl btn-glass"
+            className="md:hidden icon-btn flex-shrink-0"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="w-4 h-4" />
           </button>
 
           <div className="flex-1 min-w-0">
-            <h2 className="font-semibold text-base tracking-tight truncate" style={{ color: "#fff" }}>
+            <h2 className="font-semibold truncate" style={{ fontSize: "14px", color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
               {headerTitle}
             </h2>
-            <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{headerSub}</p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              {!isLogChannel && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "var(--success)" }} />}
+              <p className="text-xs truncate" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>{headerSub}</p>
+            </div>
           </div>
           {!isDm && (
             <button
               onClick={() => setShowSearch(true)}
-              className="p-2 rounded-xl btn-glass flex items-center gap-2 flex-shrink-0"
+              className="icon-btn flex items-center gap-1.5 flex-shrink-0"
               title="Search (Ctrl+K)"
+              style={{ width: "auto", paddingInline: "10px" }}
             >
               <Search className="w-4 h-4" />
-              <span className="text-xs hidden sm:block">Ctrl+K</span>
+              <span className="hidden sm:block" style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-dim)" }}>Ctrl+K</span>
             </button>
           )}
         </div>
