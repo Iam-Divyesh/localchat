@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export const config = {
-  port: parseInt(process.env.PORT ?? "5001", 10),
+  port: parseInt(process.env.PORT ?? "1234", 10),
   maxFileSizeMb: parseInt(process.env.MAX_FILE_SIZE_MB ?? "50", 10),
   maxStorageMb: parseInt(process.env.MAX_STORAGE_MB ?? "500", 10),
   fileExpiryMinutes: parseInt(process.env.FILE_EXPIRY_MINUTES ?? "5", 10),
