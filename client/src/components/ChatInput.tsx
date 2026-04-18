@@ -20,7 +20,6 @@ export default function ChatInput({
   onSend, onTyping, onFiles, uploads, placeholder, disableFiles, disabled, replyTo, onCancelReply 
 }: Props) {
   const [text, setText] = useState("");
-  const [focused, setFocused] = useState(false);
   const [draggingOver, setDraggingOver] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -219,8 +218,6 @@ export default function ChatInput({
               submit(); 
             }
           }}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
           placeholder={draggingOver ? "" : (placeholder ?? "Message…")}
           className="flex-1 bg-transparent text-sm resize-none focus:outline-none leading-relaxed max-h-[120px] overflow-y-auto py-1"
           style={{ color: "var(--text-primary)", opacity: draggingOver ? 0 : 1, fontFamily: "var(--font-ui)", caretColor: "var(--accent)" }}

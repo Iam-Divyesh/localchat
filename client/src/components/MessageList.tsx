@@ -74,7 +74,7 @@ function TypingDots() {
   );
 }
 
-function MsgContent({ text, isMe }: { text: string; isMe: boolean }) {
+function MsgContent({ text }: { text: string }) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -293,7 +293,7 @@ const MsgBubble = memo(function MsgBubble({
             onContextMenu={handleContextMenu}
             style={{ cursor: "context-menu" }}
           >
-            <MsgContent text={msg.text} isMe={isMe} />
+            <MsgContent text={msg.text} />
           </div>
 
           {/* Hover actions */}

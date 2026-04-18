@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Hash, Plus, Wifi, WifiOff, QrCode, LogOut, MessageSquare, X, Trash2, ScrollText, Settings } from "lucide-react";
+import { Hash, Plus, WifiOff, QrCode, LogOut, MessageSquare, X, Trash2, ScrollText, Settings } from "lucide-react";
 import { DmConversation } from "../hooks/useChat";
 
 interface Props {
