@@ -102,31 +102,6 @@ export default function ChatInput({
 
   return (
     <div className="px-4 pt-2 pb-safe sm:px-6" style={{ background: "var(--bg)", flexShrink: 0 }}>
-       {/* Emoji button — always on md+, toggle on mobile */}
-        <div className={`relative ${showExtras ? "" : "hidden md:block"}`}>
-          <button
-            type="button"
-            onClick={() => setShowEmoji((v) => !v)}
-            disabled={disabled}
-            className="icon-btn flex-shrink-0"
-            style={{ color: showEmoji ? "var(--accent)" : "var(--text-muted)", background: showEmoji ? "var(--accent-light)" : "transparent" }}
-          >
-            <Smile className="w-4 h-4" />
-          </button>
-          {showEmoji && (
-            <div ref={emojiRef} className="absolute bottom-full left-0 mb-2 z-50" style={{ maxWidth: "calc(100vw - 2rem)" }}>
-              <EmojiPicker
-                theme={Theme.LIGHT}
-                onEmojiClick={handleEmojiClick}
-                width={300}
-                height={380}
-                searchDisabled={false}
-                skinTonesDisabled
-                lazyLoadEmojis
-              />
-            </div>
-          )}
-        </div>
       {/* Reply preview */}
       {replyTo && (
         <div
@@ -188,6 +163,32 @@ export default function ChatInput({
         >
           {showExtras ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
         </button>
+
+        {/* Emoji button — always on md+, toggle on mobile */}
+        <div className={`relative ${showExtras ? "" : "hidden md:block"}`}>
+          <button
+            type="button"
+            onClick={() => setShowEmoji((v) => !v)}
+            disabled={disabled}
+            className="icon-btn flex-shrink-0"
+            style={{ color: showEmoji ? "var(--accent)" : "var(--text-muted)", background: showEmoji ? "var(--accent-light)" : "transparent" }}
+          >
+            <Smile className="w-4 h-4" />
+          </button>
+          {showEmoji && (
+            <div ref={emojiRef} className="absolute bottom-full left-0 mb-2 z-50" style={{ maxWidth: "calc(100vw - 2rem)" }}>
+              <EmojiPicker
+                theme={Theme.LIGHT}
+                onEmojiClick={handleEmojiClick}
+                width={300}
+                height={380}
+                searchDisabled={false}
+                skinTonesDisabled
+                lazyLoadEmojis
+              />
+            </div>
+          )}
+        </div>
 
         {/* File attach button — always on md+, toggle on mobile */}
         {!disableFiles && (
