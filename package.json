@@ -9,10 +9,12 @@
     "bin/",
     "lib/",
     "public/",
+    "client/",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
+    "prepare": "cd client && npm install && npm run build",
     "start": "node lib/cli.js start"
   },
   "keywords": [
