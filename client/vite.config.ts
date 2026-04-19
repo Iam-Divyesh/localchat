@@ -16,7 +16,6 @@ export default defineConfig({
           if (id.includes("node_modules/socket.io-client")) return "socketio";
           if (id.includes("node_modules/engine.io-client")) return "engineio";
           if (id.includes("node_modules/@socket.io")) return "socketio-parser";
-          if (id.includes("node_modules/emoji-picker-react")) return "emoji";
           if (id.includes("node_modules/")) return "vendor";
         },
       },
