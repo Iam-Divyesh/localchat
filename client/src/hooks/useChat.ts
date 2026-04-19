@@ -113,7 +113,8 @@ export function useChat(room: string | null, username: string | null, onChannelD
     };
 
     // message:update — for reactions; replace the matching message in-place
-    const onMessageUpdate = (updated: Message) => {
+    const onMessageUpdate = (updated: Message & { _room?: string }) => {
+      // Try channel messages first
       setRoomMessages((prev) => {
         for (const [room, msgs] of prev) {
           const idx = msgs.findIndex((m) => m.id === updated.id);
@@ -122,6 +123,20 @@ export function useChat(room: string | null, username: string | null, onChannelD
             const newMsgs = [...msgs];
             newMsgs[idx] = updated;
             next.set(room, newMsgs);
+            return next;
+          }
+        }
+        return prev;
+      });
+      // Also try DM conversations
+      setDms((prev) => {
+        for (const [roomId, dm] of prev) {
+          const idx = dm.messages.findIndex((m) => m.id === updated.id);
+          if (idx !== -1) {
+            const next = new Map(prev);
+            const newMsgs = [...dm.messages];
+            newMsgs[idx] = updated;
+            next.set(roomId, { ...dm, messages: newMsgs });
             return next;
           }
         }
@@ -318,8 +333,46 @@ export function useChat(room: string | null, username: string | null, onChannelD
   }, []);
 
   const toggleReaction = useCallback((room: string, msgId: string, emoji: string) => {
+    // Optimistic local update — reaction appears immediately
+    const applyReaction = (msgs: Message[]) => {
+      const idx = msgs.findIndex((m) => m.id === msgId);
+      if (idx === -1) return msgs;
+      const msg = msgs[idx];
+      const reactions = { ...(msg.reactions ?? {}) };
+      const users = reactions[emoji] ?? [];
+      const myIdx = users.indexOf(username ?? "");
+      if (myIdx === -1) {
+        reactions[emoji] = [...users, username ?? ""];
+      } else {
+        reactions[emoji] = users.filter((u) => u !== username);
+        if (reactions[emoji].length === 0) delete reactions[emoji];
+      }
+      const updated = [...msgs];
+      updated[idx] = { ...msg, reactions };
+      return updated;
+    };
+
+    // Update channel messages
+    setRoomMessages((prev) => {
+      const msgs = prev.get(room);
+      if (!msgs) return prev;
+      const updated = applyReaction(msgs);
+      if (updated === msgs) return prev;
+      return new Map(prev).set(room, updated);
+    });
+
+    // Update DM messages
+    setDms((prev) => {
+      const dm = prev.get(room);
+      if (!dm) return prev;
+      const updated = applyReaction(dm.messages);
+      if (updated === dm.messages) return prev;
+      return new Map(prev).set(room, { ...dm, messages: updated });
+    });
+
+    // Emit to server for persistence and sync to other users
     getSocket().emit("reaction:toggle", { room, msgId, emoji });
-  }, []);
+  }, [username]);
 
   const clearChannelUnread = useCallback((channelName: string) => {
     setUnreadChannels((prev) => {

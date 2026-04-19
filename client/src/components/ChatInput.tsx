@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Send, Paperclip, Smile, X, CornerUpLeft, Plus } from "lucide-react";
 import { UploadProgress } from "../hooks/useFiles";
 import { fileListToArray } from "../lib/fileChunker";
-import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
+import EmojiPickerPanel from "./EmojiPickerPanel";
 
 interface Props {
   onSend: (text: string) => void;
@@ -26,6 +27,8 @@ export default function ChatInput({
   const ref = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
+  const emojiBtnRef = useRef<HTMLButtonElement>(null);
+  const [emojiPos, setEmojiPos] = useState<{ top: number; left: number } | null>(null);
   const dragCounter = useRef(0);
 
   const submit = () => {
@@ -68,7 +71,10 @@ export default function ChatInput({
   useEffect(() => {
     if (!showEmoji) return;
     const handler = (e: MouseEvent) => {
-      if (emojiRef.current && !emojiRef.current.contains(e.target as Node)) {
+      if (
+        emojiRef.current && !emojiRef.current.contains(e.target as Node) &&
+        emojiBtnRef.current && !emojiBtnRef.current.contains(e.target as Node)
+      ) {
         setShowEmoji(false);
       }
     };
@@ -76,8 +82,8 @@ export default function ChatInput({
     return () => document.removeEventListener("mousedown", handler);
   }, [showEmoji]);
 
-  const handleEmojiClick = (data: EmojiClickData) => {
-    setText((prev) => prev + data.emoji);
+  const handleEmojiClick = (emoji: string) => {
+    setText((prev) => prev + emoji);
     ref.current?.focus();
   };
 
@@ -165,30 +171,47 @@ export default function ChatInput({
         </button>
 
         {/* Emoji button — always on md+, toggle on mobile */}
-        <div className={`relative ${showExtras ? "" : "hidden md:block"}`}>
+        <div className={showExtras ? "" : "hidden md:block"}>
           <button
+            ref={emojiBtnRef}
             type="button"
-            onClick={() => setShowEmoji((v) => !v)}
+            onClick={() => {
+              if (!showEmoji && emojiBtnRef.current) {
+                const rect = emojiBtnRef.current.getBoundingClientRect();
+                const pickerH = 370;
+                const pickerW = 324;
+                const top = rect.top - pickerH - 8 < 0
+                  ? rect.bottom + 8
+                  : rect.top - pickerH - 8;
+                const left = Math.min(rect.left, window.innerWidth - pickerW - 8);
+                setEmojiPos({ top, left });
+              }
+              setShowEmoji((v) => !v);
+            }}
             disabled={disabled}
             className="icon-btn flex-shrink-0"
             style={{ color: showEmoji ? "var(--accent)" : "var(--text-muted)", background: showEmoji ? "var(--accent-light)" : "transparent" }}
           >
             <Smile className="w-4 h-4" />
           </button>
-          {showEmoji && (
-            <div ref={emojiRef} className="absolute bottom-full left-0 mb-2 z-50" style={{ maxWidth: "calc(100vw - 2rem)" }}>
-              <EmojiPicker
-                theme={Theme.LIGHT}
-                onEmojiClick={handleEmojiClick}
-                width={300}
-                height={380}
-                searchDisabled={false}
-                skinTonesDisabled
-                lazyLoadEmojis
-              />
-            </div>
-          )}
         </div>
+
+        {/* Emoji picker — rendered in a portal so it escapes all stacking contexts */}
+        {showEmoji && emojiPos && createPortal(
+          <div
+            ref={emojiRef}
+            style={{
+              position: "fixed",
+              top: emojiPos.top,
+              left: emojiPos.left,
+              zIndex: 99999,
+              maxWidth: "calc(100vw - 1rem)",
+            }}
+          >
+            <EmojiPickerPanel onEmojiClick={handleEmojiClick} />
+          </div>,
+          document.body
+        )}
 
         {/* File attach button — always on md+, toggle on mobile */}
         {!disableFiles && (

@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Message, FileAvailable } from "../hooks/useChat";
 import { formatTime, FILE_MESSAGE_PREFIX } from "../lib/fileChunker";
 import FileCard from "./FileCard";
-import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
+import EmojiPickerPanel from "./EmojiPickerPanel";
 import { Reply, SmilePlus, Pin, Copy, Check, Trash2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -164,6 +164,8 @@ const MsgBubble = memo(function MsgBubble({
   const [copied, setCopied] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const pickerBtnRef = useRef<HTMLButtonElement>(null);
+  const [pickerPos, setPickerPos] = useState<{ top: number; left: number } | null>(null);
 
   useEffect(() => {
     if (!showPicker) return;
@@ -195,8 +197,8 @@ const MsgBubble = memo(function MsgBubble({
     setCtxMenu({ x, y });
   }, []);
 
-  const handleEmojiClick = useCallback((data: EmojiClickData) => {
-    onReact(msg.id, data.emoji);
+  const handleEmojiClick = useCallback((emoji: string) => {
+    onReact(msg.id, emoji);
     setShowPicker(false);
   }, [msg.id, onReact]);
 
@@ -254,7 +256,7 @@ const MsgBubble = memo(function MsgBubble({
         </button>
       )}
 
-      <div className={`flex flex-col ${isMe ? "items-end" : "items-start"}`} style={{ maxWidth: "75%", minWidth: 0, overflow: "hidden" }}>
+      <div className={`flex flex-col ${isMe ? "items-end" : "items-start"}`} style={{ maxWidth: "75%", minWidth: 0 }}>
         {/* Username and time for others */}
         {!isMe && (
           <div className="flex items-center gap-2 mb-1 ml-1">
@@ -312,33 +314,51 @@ const MsgBubble = memo(function MsgBubble({
               )}
               <div className="relative">
                 <button
-                  onClick={() => setShowPicker((v) => !v)}
+                  ref={pickerBtnRef}
+                  onClick={() => {
+                    if (!showPicker && pickerBtnRef.current) {
+                      const rect = pickerBtnRef.current.getBoundingClientRect();
+                      const pickerH = 370;
+                      const pickerW = 324;
+                      const top = rect.top - pickerH - 8 < 0
+                        ? rect.bottom + 8
+                        : rect.top - pickerH - 8;
+                      const left = Math.min(
+                        isMe ? rect.right - pickerW : rect.left,
+                        window.innerWidth - pickerW - 8
+                      );
+                      setPickerPos({ top, left: Math.max(8, left) });
+                    }
+                    setShowPicker((v) => !v);
+                  }}
                   className="w-7 h-7 rounded-lg flex items-center justify-center btn-glass"
                   title="React"
                 >
                   <SmilePlus className="w-3.5 h-3.5" />
                 </button>
-                {showPicker && (
-                  <div
-                    ref={pickerRef}
-                    className="absolute z-50"
-                    style={{ [isMe ? "right" : "left"]: 0, bottom: "110%" }}
-                  >
-                    <EmojiPicker
-                      theme={Theme.DARK}
-                      onEmojiClick={handleEmojiClick}
-                      width={300}
-                      height={350}
-                      searchDisabled={false}
-                      skinTonesDisabled
-                      lazyLoadEmojis
-                    />
-                  </div>
-                )}
               </div>
             </div>
           )}
         </div>
+
+        {/* Reaction emoji picker — portal */}
+        {showPicker && pickerPos && createPortal(
+          <div
+            ref={pickerRef}
+            style={{
+              position: "fixed",
+              top: pickerPos.top,
+              left: pickerPos.left,
+              zIndex: 99999,
+              maxWidth: "calc(100vw - 1rem)",
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <EmojiPickerPanel onEmojiClick={handleEmojiClick} />
+          </div>,
+          document.body
+        )}
+
 
         {/* Context menu */}
         {ctxMenu && createPortal(

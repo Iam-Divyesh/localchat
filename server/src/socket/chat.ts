@@ -224,7 +224,18 @@ export function registerChatHandlers(io: Server, socket: Socket): void {
     if (!emoji || emoji.length > 8) return;
     const updated = toggleReaction(room, msgId, emoji, authUser.username);
     if (updated) {
-      io.to(room).emit(SOCKET_EVENTS.MESSAGE_UPDATE, updated);
+      if (room.startsWith("dm:")) {
+        // DM rooms aren't Socket.IO rooms — deliver to both participants directly
+        const [, a, b] = room.split(":");
+        for (const sid of findAllSocketsByUsername(a)) {
+          io.to(sid).emit(SOCKET_EVENTS.MESSAGE_UPDATE, { ...updated, _room: room });
+        }
+        for (const sid of findAllSocketsByUsername(b)) {
+          io.to(sid).emit(SOCKET_EVENTS.MESSAGE_UPDATE, { ...updated, _room: room });
+        }
+      } else {
+        io.to(room).emit(SOCKET_EVENTS.MESSAGE_UPDATE, updated);
+      }
     }
   });
 

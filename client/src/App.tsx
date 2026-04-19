@@ -265,7 +265,7 @@ export default function App() {
     : isDm ? "Direct message · session only" : "Channel · messages not stored on internet";
 
   return (
-    <div className="flex fixed inset-0 overflow-hidden" style={{ background: "var(--bg)", color: "var(--text-primary)" }}>
+    <div className="flex fixed inset-0" style={{ background: "var(--bg)", color: "var(--text-primary)" }}>
 
       {showSearch && (
         <SearchModal
