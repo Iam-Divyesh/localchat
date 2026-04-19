@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Paperclip, Smile, X, CornerUpLeft } from "lucide-react";
+import { Send, Paperclip, Smile, X, CornerUpLeft, Plus } from "lucide-react";
 import { UploadProgress } from "../hooks/useFiles";
 import { fileListToArray } from "../lib/fileChunker";
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
@@ -22,6 +22,7 @@ export default function ChatInput({
   const [text, setText] = useState("");
   const [draggingOver, setDraggingOver] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [showExtras, setShowExtras] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
@@ -100,7 +101,7 @@ export default function ChatInput({
   };
 
   return (
-    <div className="px-4 pb-5 pt-2 sm:px-6" style={{ background: "var(--bg)", flexShrink: 0 }}>
+    <div className="px-4 pt-2 pb-safe sm:px-6" style={{ background: "var(--bg)", flexShrink: 0 }}>
       {/* Reply preview */}
       {replyTo && (
         <div
@@ -152,8 +153,19 @@ export default function ChatInput({
           </div>
         )}
 
-        {/* Emoji button */}
-        <div className="relative">
+        {/* Mobile "+" toggle — hidden on md+ */}
+        <button
+          type="button"
+          onClick={() => setShowExtras((v) => !v)}
+          disabled={disabled}
+          className="md:hidden icon-btn flex-shrink-0"
+          style={{ color: showExtras ? "var(--accent)" : "var(--text-muted)", background: showExtras ? "var(--accent-light)" : "transparent" }}
+        >
+          {showExtras ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+        </button>
+
+        {/* Emoji button — always on md+, toggle on mobile */}
+        <div className={`relative ${showExtras ? "" : "hidden md:block"}`}>
           <button
             type="button"
             onClick={() => setShowEmoji((v) => !v)}
@@ -164,7 +176,7 @@ export default function ChatInput({
             <Smile className="w-4 h-4" />
           </button>
           {showEmoji && (
-            <div ref={emojiRef} className="absolute bottom-full left-0 mb-2 z-50">
+            <div ref={emojiRef} className="absolute bottom-full left-0 mb-2 z-50" style={{ maxWidth: "calc(100vw - 2rem)" }}>
               <EmojiPicker
                 theme={Theme.LIGHT}
                 onEmojiClick={handleEmojiClick}
@@ -178,14 +190,14 @@ export default function ChatInput({
           )}
         </div>
 
-        {/* File attach button */}
+        {/* File attach button — always on md+, toggle on mobile */}
         {!disableFiles && (
           <>
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={disabled}
-              className="icon-btn flex-shrink-0"
+              className={`icon-btn flex-shrink-0 ${showExtras ? "" : "hidden md:flex"}`}
               title="Attach file"
             >
               <Paperclip className="w-4 h-4" />

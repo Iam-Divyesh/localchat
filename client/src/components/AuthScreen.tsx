@@ -53,7 +53,7 @@ export default function AuthScreen({ onAuth }: Props) {
 
   return (
     <div
-      className="min-h-screen flex"
+      className="fixed inset-0 flex overflow-y-auto"
       style={{ background: "var(--bg)", fontFamily: "var(--font-ui)" }}
     >
       {/* Left panel — branding, hidden on mobile */}

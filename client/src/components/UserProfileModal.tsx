@@ -26,12 +26,12 @@ export default function UserProfileModal({ username, email, online, onClose }: P
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4"
       style={{ background: "rgba(0,0,0,0.4)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="w-80 rounded-2xl overflow-hidden animate-slide-up"
+        className="w-full md:w-80 rounded-t-2xl md:rounded-2xl overflow-hidden animate-slide-up"
         style={{ background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 20px 60px rgba(0,0,0,0.12)" }}
       >
         {/* Avatar banner */}

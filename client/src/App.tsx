@@ -234,7 +234,7 @@ export default function App() {
 
   if (appState === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)" }}>
+      <div className="fixed inset-0 flex items-center justify-center" style={{ background: "var(--bg)" }}>
         <div className="spinner" />
       </div>
     );
@@ -265,7 +265,7 @@ export default function App() {
     : isDm ? "Direct message · session only" : "Channel · messages not stored on internet";
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: "var(--bg)", color: "var(--text-primary)" }}>
+    <div className="flex fixed inset-0 overflow-hidden" style={{ background: "var(--bg)", color: "var(--text-primary)" }}>
 
       {showSearch && (
         <SearchModal

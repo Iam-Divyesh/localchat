@@ -16,7 +16,7 @@ export default function JoinScreen({ username, onJoin, onLogout }: Props) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--bg)" }}>
+    <div className="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto" style={{ background: "var(--bg)" }}>
       <div className="w-full max-w-[360px] animate-slide-up">
         {/* Logo */}
         <div className="flex items-center gap-2.5 mb-10 justify-center">

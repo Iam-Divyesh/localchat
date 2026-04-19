@@ -69,12 +69,12 @@ export default function SettingsModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4"
       style={{ background: "rgba(0,0,0,0.4)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="w-full max-w-md rounded-2xl overflow-hidden animate-slide-up"
+        className="w-full h-full md:h-auto md:max-w-md rounded-none md:rounded-2xl overflow-hidden flex flex-col animate-slide-up"
         style={{ background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 20px 60px rgba(0,0,0,0.12)" }}
       >
         {/* Header */}
@@ -88,17 +88,17 @@ export default function SettingsModal({
           </button>
         </div>
 
-        <div className="flex">
-          {/* Sidebar tabs */}
+        <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+          {/* Tabs — horizontal on mobile, vertical on desktop */}
           <div
-            className="flex flex-col py-3 px-2 gap-0.5"
-            style={{ width: "148px", borderRight: "1px solid var(--border)", background: "var(--bg)" }}
+            className="flex md:flex-col py-2 md:py-3 px-2 gap-0.5 overflow-x-auto md:overflow-x-visible flex-shrink-0 md:w-[148px] border-b md:border-b-0 md:border-r"
+            style={{ background: "var(--bg)", borderColor: "var(--border)" }}
           >
             {tabs.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-all"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-all whitespace-nowrap flex-shrink-0"
                 style={{
                   background: tab === t.id ? "var(--accent-light)" : "transparent",
                   color: tab === t.id ? "var(--accent)" : "var(--text-muted)",
@@ -115,7 +115,7 @@ export default function SettingsModal({
           </div>
 
           {/* Tab content */}
-          <div className="flex-1 p-5">
+          <div className="flex-1 p-5 overflow-y-auto" style={{ borderTop: "none" }}>
             {tab === "profile" && (
               <div className="space-y-4">
                 <div>

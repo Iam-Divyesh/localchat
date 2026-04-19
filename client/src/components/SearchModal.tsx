@@ -37,17 +37,17 @@ export default function SearchModal({ onSearch, onNavigate, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-24"
+      className="fixed inset-0 z-50 flex flex-col md:flex-row md:items-start md:justify-center md:pt-24"
       style={{ background: "rgba(0,0,0,0.4)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="w-full max-w-xl mx-4 rounded-2xl overflow-hidden animate-slide-up"
+        className="w-full h-full md:h-auto md:max-w-xl md:mx-4 md:rounded-2xl overflow-hidden animate-slide-up flex flex-col"
         style={{ background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}
       >
         {/* Search input */}
         <div
-          className="flex items-center gap-4 px-5 py-4"
+          className="flex items-center gap-4 px-5 py-4 flex-shrink-0"
           style={{ borderBottom: "1px solid var(--border)" }}
         >
           <Search className="w-5 h-5 flex-shrink-0" style={{ color: "var(--text-muted)" }} />
@@ -70,7 +70,7 @@ export default function SearchModal({ onSearch, onNavigate, onClose }: Props) {
         </div>
 
         {/* Results */}
-        <div className="max-h-96 overflow-y-auto">
+        <div className="flex-1 md:max-h-96 overflow-y-auto">
           {results.length === 0 && query.trim() && !searching && (
             <p className="px-5 py-8 text-center text-sm" style={{ color: "var(--text-muted)", fontFamily: "var(--font-ui)" }}>
               No messages found for "{query}"

@@ -74,7 +74,7 @@ function TypingDots() {
   );
 }
 
-function MsgContent({ text }: { text: string }) {
+function MsgContent({ text, isMe }: { text: string; isMe?: boolean }) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -87,8 +87,8 @@ function MsgContent({ text }: { text: string }) {
               <code
                 className="px-1.5 py-0.5 rounded text-sm"
                 style={{
-                  background: "var(--border-soft)",
-                  color: "var(--accent)",
+                  background: isMe ? "rgba(0,0,0,0.15)" : "var(--border-soft)",
+                  color: isMe ? "#fff" : "var(--accent)",
                 }}
               >
                 {children}
@@ -113,12 +113,12 @@ function MsgContent({ text }: { text: string }) {
         },
         a({ href, children }) {
           return (
-            <a 
-              href={href} 
-              target="_blank" 
+            <a
+              href={href}
+              target="_blank"
               rel="noreferrer"
               className="underline underline-offset-2"
-              style={{ color: "var(--accent)" }}
+              style={{ color: isMe ? "rgba(255,255,255,0.9)" : "var(--accent)" }}
             >
               {children}
             </a>
@@ -293,7 +293,7 @@ const MsgBubble = memo(function MsgBubble({
             onContextMenu={handleContextMenu}
             style={{ cursor: "context-menu" }}
           >
-            <MsgContent text={msg.text} />
+            <MsgContent text={msg.text} isMe={isMe} />
           </div>
 
           {/* Hover actions */}
