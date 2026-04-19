@@ -467,8 +467,6 @@ export default function MessageList({
         </div>
       )}
 
-      <div className="flex-1" />
-
       {isLog ? (
         <div className="space-y-1">
           {messages.length === 0 && (
