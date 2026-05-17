@@ -31,7 +31,11 @@ jobs:
               echo "==> First-time setup..."
 
               apt-get update -q
-              apt-get install -y -q git
+              apt-get install -y -q git curl
+
+              # Install Node.js 22.x
+              curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+              apt-get install -y nodejs
 
               mkdir -p /var/www
               git clone https://github.com/Iam-Divyesh/localchat $APP_DIR
