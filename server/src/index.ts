@@ -9,7 +9,7 @@ import { registerFileHandlers, startFileExpiry } from "./socket/files.js";
 import { startMdns, stopMdns } from "./discovery/mdns.js";
 import { startUdpBroadcast, stopUdpBroadcast, getLocalIpExport } from "./discovery/udpBroadcast.js";
 import { initDb, closeDb } from "./db/database.js";
-import { setPersistMode, connectionCountForUser, getAllUsers } from "./store/rooms.js";
+import { setPersistMode, connectionCountForUserInNetwork, getAllUsers } from "./store/rooms.js";
 
 export function startServer(overrides: Partial<typeof config> = {}): void {
   const cfg = { ...config, ...overrides };
@@ -90,18 +90,31 @@ export function startServer(overrides: Partial<typeof config> = {}): void {
     next();
   });
 
+  // Extract client public IP for network isolation
+  // Behind Nginx, the real IP arrives via X-Forwarded-For
+  io.use((socket, next) => {
+    const forwarded = socket.handshake.headers["x-forwarded-for"] as string | undefined;
+    const ip = forwarded?.split(",")[0]?.trim() ?? socket.handshake.address;
+    (socket as unknown as Record<string, unknown>).lcNetworkId = ip;
+    next();
+  });
+
   io.on("connection", (socket) => {
     const lcUser = (socket as unknown as Record<string, unknown>).lcUser as { username: string } | undefined;
+    const networkId = (socket as unknown as Record<string, unknown>).lcNetworkId as string;
+
+    // Join the network-scoped Socket.IO room for scoped broadcasts
+    socket.join(`net:${networkId}`);
 
     // Count connections BEFORE registering this socket in userMap
     // If count is 0 this is their first tab — log joined
-    const existingConnections = lcUser?.username ? connectionCountForUser(lcUser.username) : 1;
+    const existingConnections = lcUser?.username ? connectionCountForUserInNetwork(lcUser.username, networkId) : 1;
 
     registerChatHandlers(io, socket);
     registerFileHandlers(io, socket);
 
     if (lcUser?.username && existingConnections === 0) {
-      logUserJoined(io, lcUser.username);
+      logUserJoined(io, lcUser.username, networkId);
     }
   });
 

@@ -6,26 +6,25 @@ import {
   leaveRoom,
   getUser,
   getRoomUsernames,
-  createChannel,
-  deleteChannel,
-  listChannels,
   addMessage,
   getMessages,
   getMessagesBefore,
-  getAllUsers,
   dmRoomId,
-  findSocketByUsername,
-  findAllSocketsByUsername,
+  findAllSocketsByUsernameInNetwork,
   findMessage,
   toggleReaction,
   deleteMessage,
   pinMessage,
   unpinMessage,
   getPinned,
-  searchMessages,
-  appendLog,
-  getLogRoom,
-  connectionCountForUser,
+  createChannelInNetwork,
+  deleteChannelInNetwork,
+  listChannelsInNetwork,
+  getAllUsersInNetwork,
+  appendLogInNetwork,
+  getLogRoomInNetwork,
+  searchMessagesInNetwork,
+  connectionCountForUserInNetwork,
   ChatMessage,
 } from "../store/rooms.js";
 
@@ -61,20 +60,41 @@ function getAuthUser(socket: Socket): DbUser {
   return (socket as unknown as Record<string, unknown>).lcUser as DbUser;
 }
 
+function getNetworkId(socket: Socket): string {
+  return (socket as unknown as Record<string, unknown>).lcNetworkId as string;
+}
+
+// Returns the Socket.IO network room key for broadcasting to all sockets on the same network
+function netRoom(networkId: string): string {
+  return `net:${networkId}`;
+}
+
+// Converts a client-facing room name to the server-internal prefixed room key
+function toServerRoom(networkId: string, clientRoom: string): string {
+  return `${networkId}:${clientRoom}`;
+}
+
+// Strips the network prefix from a server room key to get the client-facing name
+function toClientRoom(networkId: string, serverRoom: string): string {
+  const prefix = `${networkId}:`;
+  return serverRoom.startsWith(prefix) ? serverRoom.slice(prefix.length) : serverRoom;
+}
+
 // Strip HTML tags to prevent XSS if text is ever rendered as HTML
 function sanitize(text: string): string {
   return text.replace(/<[^>]*>/g, "");
 }
 
-// Broadcast a log entry to all sockets and store it
-function broadcastLog(io: Server, text: string): void {
-  const msg = appendLog(text);
-  io.emit(SOCKET_EVENTS.LOG_MESSAGE, msg);
+function broadcastLog(io: Server, networkId: string, text: string): void {
+  const msg = appendLogInNetwork(networkId, text);
+  io.to(netRoom(networkId)).emit(SOCKET_EVENTS.LOG_MESSAGE, msg);
 }
 
 export function registerChatHandlers(io: Server, socket: Socket): void {
+  const networkId = getNetworkId(socket);
+
   // Send current channel list to newly connected socket
-  socket.emit(SOCKET_EVENTS.CHANNELS_UPDATE, listChannels());
+  socket.emit(SOCKET_EVENTS.CHANNELS_UPDATE, listChannelsInNetwork(networkId));
 
   socket.on(
     SOCKET_EVENTS.ROOM_JOIN,
@@ -84,7 +104,8 @@ export function registerChatHandlers(io: Server, socket: Socket): void {
     ) => {
       const authUser = getAuthUser(socket);
       const cleanUsername = authUser.username;
-      const cleanRoom = (room ?? "").trim().slice(0, 40) || "general";
+      const cleanName = ((room ?? "").trim().slice(0, 40) || "general").toLowerCase();
+      const cleanRoom = toServerRoom(networkId, cleanName);
 
       const prev = getUser(socket.id);
       if (prev) {
@@ -93,18 +114,18 @@ export function registerChatHandlers(io: Server, socket: Socket): void {
         io.to(prev.room).emit(SOCKET_EVENTS.ROOM_USERS, getRoomUsernames(prev.room));
       }
 
-      createChannel(cleanRoom);
-      joinRoom(socket.id, cleanUsername, cleanRoom);
+      createChannelInNetwork(networkId, cleanName);
+      joinRoom(socket.id, cleanUsername, cleanRoom, networkId);
       socket.join(cleanRoom);
 
       io.to(cleanRoom).emit(SOCKET_EVENTS.ROOM_USERS, getRoomUsernames(cleanRoom));
-      io.emit(SOCKET_EVENTS.USERS_ALL, getAllUsers().map((u) => u.username));
+      io.to(netRoom(networkId)).emit(SOCKET_EVENTS.USERS_ALL, getAllUsersInNetwork(networkId).map((u) => u.username));
 
       ack({
         ok: true,
         messages: getMessages(cleanRoom),
         users: getRoomUsernames(cleanRoom),
-        channels: listChannels(),
+        channels: listChannelsInNetwork(networkId),
         pinned: getPinned(cleanRoom) ?? null,
       });
     }
@@ -115,11 +136,11 @@ export function registerChatHandlers(io: Server, socket: Socket): void {
     SOCKET_EVENTS.CHANNEL_CREATE,
     (name: string, ack?: (res: { ok: boolean; channels: string[] }) => void) => {
       const authUser = getAuthUser(socket);
-      const isNew = createChannel(name);
-      const channels = listChannels();
+      const isNew = createChannelInNetwork(networkId, name);
+      const channels = listChannelsInNetwork(networkId);
       if (isNew) {
-        io.emit(SOCKET_EVENTS.CHANNELS_UPDATE, channels);
-        broadcastLog(io, `${authUser.username} created channel #${name}`);
+        io.to(netRoom(networkId)).emit(SOCKET_EVENTS.CHANNELS_UPDATE, channels);
+        broadcastLog(io, networkId, `${authUser.username} created channel #${name}`);
       }
       ack?.({ ok: true, channels });
     }
@@ -130,37 +151,37 @@ export function registerChatHandlers(io: Server, socket: Socket): void {
     SOCKET_EVENTS.CHANNEL_DELETE,
     (name: string, ack?: (res: { ok: boolean; error?: string }) => void) => {
       const authUser = getAuthUser(socket);
-      const deleted = deleteChannel(name);
+      const deleted = deleteChannelInNetwork(networkId, name);
       if (!deleted) {
         return ack?.({ ok: false, error: "Channel cannot be deleted" });
       }
+      const serverRoom = toServerRoom(networkId, name);
       // Kick all sockets out of the deleted room so Socket.IO room is cleaned up
       for (const [, s] of io.sockets.sockets) {
         const u = getUser(s.id);
-        if (u && u.room === name) {
-          s.leave(name);
+        if (u && u.room === serverRoom) {
+          s.leave(serverRoom);
           leaveRoom(s.id);
         }
       }
-      const channels = listChannels();
-      // Tell everyone: channel list updated + which channel was deleted
-      io.emit(SOCKET_EVENTS.CHANNELS_UPDATE, channels);
-      io.emit(SOCKET_EVENTS.CHANNEL_DELETED, name);
-      broadcastLog(io, `${authUser.username} deleted channel #${name}`);
+      const channels = listChannelsInNetwork(networkId);
+      io.to(netRoom(networkId)).emit(SOCKET_EVENTS.CHANNELS_UPDATE, channels);
+      io.to(netRoom(networkId)).emit(SOCKET_EVENTS.CHANNEL_DELETED, name);
+      broadcastLog(io, networkId, `${authUser.username} deleted channel #${name}`);
       ack?.({ ok: true });
     }
   );
 
   // Channel list request
   socket.on(SOCKET_EVENTS.CHANNELS_LIST, (ack: (channels: string[]) => void) => {
-    ack(listChannels());
+    ack(listChannelsInNetwork(networkId));
   });
 
   socket.on(SOCKET_EVENTS.MESSAGE_SEND, (payload: string | { text: string; replyTo?: { id: string; username: string; text: string } }) => {
     const user = getUser(socket.id);
     if (!user) return;
     // #log is read-only
-    if (user.room === getLogRoom()) return;
+    if (user.room === getLogRoomInNetwork(networkId)) return;
 
     const text = typeof payload === "string" ? payload : payload?.text;
     const replyTo = typeof payload === "object" ? payload?.replyTo : undefined;
@@ -179,14 +200,14 @@ export function registerChatHandlers(io: Server, socket: Socket): void {
     addMessage(user.room, msg);
     io.to(user.room).emit(SOCKET_EVENTS.MESSAGE, msg);
 
-    // Notify @mentioned users
+    // Notify @mentioned users within the same network
     const mentions = [...new Set((trimmed.match(/@([a-zA-Z0-9_-]+)/g) ?? []).map((m) => m.slice(1)))];
     for (const mentionedName of mentions) {
       if (mentionedName === user.username) continue;
-      for (const sid of findAllSocketsByUsername(mentionedName)) {
+      for (const sid of findAllSocketsByUsernameInNetwork(mentionedName, networkId)) {
         io.to(sid).emit(SOCKET_EVENTS.MENTION, {
           from: user.username,
-          room: user.room,
+          room: toClientRoom(networkId, user.room),
           text: trimmed,
           msgId: msg.id,
         });
@@ -197,23 +218,22 @@ export function registerChatHandlers(io: Server, socket: Socket): void {
   // Message delete — only sender can delete
   socket.on("message:delete", ({ room, msgId }: { room: string; msgId: string }) => {
     const authUser = getAuthUser(socket);
-    const deleted = deleteMessage(room, msgId, authUser.username);
+    const serverRoom = toServerRoom(networkId, room);
+    const deleted = deleteMessage(serverRoom, msgId, authUser.username);
     if (deleted) {
-      // Broadcast to the room (channel) or both DM participants
       if (room.startsWith("dm:")) {
         const [, a, b] = room.split(":");
         for (const s of io.sockets.sockets.values()) {
           const u = getUser(s.id);
-          if (u && (u.username === a || u.username === b)) {
+          if (u && (u.username === a || u.username === b) && u.networkId === networkId) {
             s.emit("message:delete", { room, msgId });
           }
         }
-        // Also cover sender's other tabs not in userMap (e.g. not joined to a channel)
-        for (const sid of findAllSocketsByUsername(authUser.username)) {
+        for (const sid of findAllSocketsByUsernameInNetwork(authUser.username, networkId)) {
           io.to(sid).emit("message:delete", { room, msgId });
         }
       } else {
-        io.to(room).emit("message:delete", { room, msgId });
+        io.to(serverRoom).emit("message:delete", { room, msgId });
       }
     }
   });
@@ -222,26 +242,26 @@ export function registerChatHandlers(io: Server, socket: Socket): void {
   socket.on(SOCKET_EVENTS.REACTION_TOGGLE, ({ room, msgId, emoji }: { room: string; msgId: string; emoji: string }) => {
     const authUser = getAuthUser(socket);
     if (!emoji || emoji.length > 8) return;
-    const updated = toggleReaction(room, msgId, emoji, authUser.username);
+    const serverRoom = toServerRoom(networkId, room);
+    const updated = toggleReaction(serverRoom, msgId, emoji, authUser.username);
     if (updated) {
       if (room.startsWith("dm:")) {
-        // DM rooms aren't Socket.IO rooms — deliver to both participants directly
         const [, a, b] = room.split(":");
-        for (const sid of findAllSocketsByUsername(a)) {
+        for (const sid of findAllSocketsByUsernameInNetwork(a, networkId)) {
           io.to(sid).emit(SOCKET_EVENTS.MESSAGE_UPDATE, { ...updated, _room: room });
         }
-        for (const sid of findAllSocketsByUsername(b)) {
+        for (const sid of findAllSocketsByUsernameInNetwork(b, networkId)) {
           io.to(sid).emit(SOCKET_EVENTS.MESSAGE_UPDATE, { ...updated, _room: room });
         }
       } else {
-        io.to(room).emit(SOCKET_EVENTS.MESSAGE_UPDATE, updated);
+        io.to(serverRoom).emit(SOCKET_EVENTS.MESSAGE_UPDATE, updated);
       }
     }
   });
 
   socket.on(SOCKET_EVENTS.TYPING_START, () => {
     const user = getUser(socket.id);
-    if (user && user.room !== getLogRoom())
+    if (user && user.room !== getLogRoomInNetwork(networkId))
       socket.to(user.room).emit(SOCKET_EVENTS.TYPING_UPDATE, { username: user.username, typing: true });
   });
 
@@ -251,10 +271,10 @@ export function registerChatHandlers(io: Server, socket: Socket): void {
       socket.to(user.room).emit(SOCKET_EVENTS.TYPING_UPDATE, { username: user.username, typing: false });
   });
 
-  // DM typing indicators — only delivered to the recipient (all their tabs)
+  // DM typing indicators — only delivered to the recipient (all their tabs) on the same network
   socket.on(SOCKET_EVENTS.DM_TYPING, ({ to, typing }: { to: string; typing: boolean }) => {
     const sender = getUser(socket.id) ?? { username: getAuthUser(socket).username };
-    for (const recipientSocketId of findAllSocketsByUsername(to)) {
+    for (const recipientSocketId of findAllSocketsByUsernameInNetwork(to, networkId)) {
       io.to(recipientSocketId).emit(SOCKET_EVENTS.DM_TYPING, { from: sender.username, typing });
     }
   });
@@ -267,7 +287,8 @@ export function registerChatHandlers(io: Server, socket: Socket): void {
       if (!sender || !text.trim()) return;
 
       const trimmed = text.trim().slice(0, 20000);
-      const roomId = dmRoomId(sender.username, to);
+      const bareRoomId = dmRoomId(sender.username, to);
+      const serverRoomId = toServerRoom(networkId, bareRoomId);
       const msg: ChatMessage = {
         id: randomUUID(),
         username: sender.username,
@@ -277,58 +298,57 @@ export function registerChatHandlers(io: Server, socket: Socket): void {
         ...(replyTo ? { replyTo } : {}),
       };
 
-      addMessage(roomId, msg);
+      addMessage(serverRoomId, msg);
 
-      // Deliver to all recipient tabs
-      for (const recipientSocketId of findAllSocketsByUsername(to)) {
-        io.to(recipientSocketId).emit(SOCKET_EVENTS.DM_RECEIVE, { from: sender.username, roomId, msg });
+      // Deliver to all recipient tabs on the same network
+      for (const recipientSocketId of findAllSocketsByUsernameInNetwork(to, networkId)) {
+        io.to(recipientSocketId).emit(SOCKET_EVENTS.DM_RECEIVE, { from: sender.username, roomId: bareRoomId, msg });
       }
       // Deliver to all sender tabs (echo to other tabs)
-      socket.emit(SOCKET_EVENTS.DM_RECEIVE, { from: sender.username, roomId, msg });
+      socket.emit(SOCKET_EVENTS.DM_RECEIVE, { from: sender.username, roomId: bareRoomId, msg });
     }
   );
 
   socket.on(SOCKET_EVENTS.USERS_ALL, (ack: (users: string[]) => void) => {
-    ack(getAllUsers().map((u) => u.username));
+    ack(getAllUsersInNetwork(networkId).map((u) => u.username));
   });
 
   // Message history pagination (scroll up)
   socket.on("messages:before", ({ room, before }: { room: string; before: number }, ack: (msgs: ChatMessage[]) => void) => {
-    ack(getMessagesBefore(room, before));
+    ack(getMessagesBefore(toServerRoom(networkId, room), before));
   });
 
   // Pin a message in current room
   socket.on(SOCKET_EVENTS.PIN_SET, ({ room, msgId }: { room: string; msgId: string }) => {
     if (room.startsWith("dm:")) return; // no pinning in DMs
-    const pinned = pinMessage(room, msgId);
+    const serverRoom = toServerRoom(networkId, room);
+    const pinned = pinMessage(serverRoom, msgId);
     if (pinned) {
-      io.to(room).emit(SOCKET_EVENTS.PIN_UPDATE, { room, pinned });
+      io.to(serverRoom).emit(SOCKET_EVENTS.PIN_UPDATE, { room, pinned });
     }
   });
 
   socket.on(SOCKET_EVENTS.PIN_CLEAR, ({ room }: { room: string }) => {
-    unpinMessage(room);
-    io.to(room).emit(SOCKET_EVENTS.PIN_UPDATE, { room, pinned: null });
+    const serverRoom = toServerRoom(networkId, room);
+    unpinMessage(serverRoom);
+    io.to(serverRoom).emit(SOCKET_EVENTS.PIN_UPDATE, { room, pinned: null });
   });
 
-  // Full-text search
+  // Full-text search scoped to this network
   socket.on(SOCKET_EVENTS.SEARCH, (query: string, ack: (results: Array<{ room: string; msg: ChatMessage }>) => void) => {
     if (typeof query !== "string" || !query.trim()) return ack([]);
-    ack(searchMessages(query.trim().slice(0, 100)));
+    ack(searchMessagesInNetwork(networkId, query.trim().slice(0, 100)));
   });
 
-  // User profile lookup — returns username, email, and online status from DB
+  // User profile lookup — scoped to this network for online status
   socket.on(SOCKET_EVENTS.USER_PROFILE, (username: string, ack: (profile: { username: string; email: string; online: boolean } | null) => void) => {
     try {
       const dbUser = getUserByUsername(username);
       if (!dbUser) return ack(null);
-      const onlineUsers = getAllUsers();
-      const online = onlineUsers.some((u) => u.username === username);
+      const online = getAllUsersInNetwork(networkId).some((u) => u.username === username);
       ack({ username: dbUser.username, email: dbUser.email, online });
     } catch {
-      // DB not available (no persist mode) — return online status only
-      const onlineUsers = getAllUsers();
-      const online = onlineUsers.some((u) => u.username === username);
+      const online = getAllUsersInNetwork(networkId).some((u) => u.username === username);
       ack({ username, email: "", online });
     }
   });
@@ -337,15 +357,15 @@ export function registerChatHandlers(io: Server, socket: Socket): void {
     const user = leaveRoom(socket.id);
     if (!user) return;
     io.to(user.room).emit(SOCKET_EVENTS.ROOM_USERS, getRoomUsernames(user.room));
-    io.emit(SOCKET_EVENTS.USERS_ALL, getAllUsers().map((u) => u.username));
-    // Only log "left" if this was their last active connection
-    if (connectionCountForUser(user.username) === 0) {
-      broadcastLog(io, `${user.username} left LocalChat`);
+    io.to(netRoom(user.networkId)).emit(SOCKET_EVENTS.USERS_ALL, getAllUsersInNetwork(user.networkId).map((u) => u.username));
+    // Only log "left" if this was their last active connection on this network
+    if (connectionCountForUserInNetwork(user.username, user.networkId) === 0) {
+      broadcastLog(io, user.networkId, `${user.username} left LocalChat`);
     }
   });
 }
 
 // Called from index.ts on socket connect (after auth)
-export function logUserJoined(io: Server, username: string): void {
-  broadcastLog(io, `${username} joined LocalChat`);
+export function logUserJoined(io: Server, username: string, networkId: string): void {
+  broadcastLog(io, networkId, `${username} joined LocalChat`);
 }

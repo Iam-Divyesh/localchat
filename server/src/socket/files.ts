@@ -9,13 +9,17 @@ import {
   deleteFileRecord,
   getAllFileRecords,
   toFileMetadata,
-  appendLog,
+  appendLogInNetwork,
   canStoreFile,
   getTotalStorageMb,
 } from "../store/rooms.js";
 
 function getAuthUser(socket: Socket): DbUser {
   return (socket as unknown as Record<string, unknown>).lcUser as DbUser;
+}
+
+function getNetworkId(socket: Socket): string {
+  return (socket as unknown as Record<string, unknown>).lcNetworkId as string;
 }
 
 const MAX_BYTES = config.maxFileSizeMb * 1024 * 1024;
@@ -30,6 +34,7 @@ export function registerFileHandlers(io: Server, socket: Socket): void {
       const authUser = getAuthUser(socket);
       const user = getUser(socket.id);
       const username = user?.username ?? authUser.username;
+      const networkId = getNetworkId(socket);
 
       // Validate the roomId
       const roomId = (meta.roomId ?? "").trim();
@@ -60,6 +65,7 @@ export function registerFileHandlers(io: Server, socket: Socket): void {
         mimeType: meta.mimeType,
         uploadedBy: username,
         room: roomId,
+        networkId,
         timestamp: Date.now(),
         expiresAt: Date.now() + config.fileExpiryMinutes * 60 * 1000,
         chunks: new Array(meta.totalChunks),
@@ -89,25 +95,26 @@ export function registerFileHandlers(io: Server, socket: Socket): void {
 
     if (record.receivedChunks === record.totalChunks) {
       const meta = toFileMetadata(record);
+      const networkId = record.networkId;
+      const netRoomKey = `net:${networkId}`;
 
       if (record.room.startsWith("dm:")) {
         const [, a, b] = record.room.split(":");
         for (const s of io.sockets.sockets.values()) {
           const u = getUser(s.id);
-          if (u && (u.username === a || u.username === b)) {
+          if (u && (u.username === a || u.username === b) && u.networkId === networkId) {
             s.emit("file:available", meta);
           }
         }
         const senderUser = getUser(socket.id);
         if (!senderUser) socket.emit("file:available", meta);
-        // Log DM file share (no content, just metadata)
-        const logMsg = appendLog(`${record.uploadedBy} shared a file in DM (${record.name} · ${(record.size / 1024).toFixed(1)} KB)`);
-        io.emit("log:message", logMsg);
+        const logMsg = appendLogInNetwork(networkId, `${record.uploadedBy} shared a file in DM (${record.name} · ${(record.size / 1024).toFixed(1)} KB)`);
+        io.to(netRoomKey).emit("log:message", logMsg);
       } else {
-        io.to(record.room).emit("file:available", meta);
-        // Log channel file share
-        const logMsg = appendLog(`${record.uploadedBy} shared ${record.name} (${(record.size / 1024).toFixed(1)} KB) in #${record.room}`);
-        io.emit("log:message", logMsg);
+        const serverRoom = `${networkId}:${record.room}`;
+        io.to(serverRoom).emit("file:available", meta);
+        const logMsg = appendLogInNetwork(networkId, `${record.uploadedBy} shared ${record.name} (${(record.size / 1024).toFixed(1)} KB) in #${record.room}`);
+        io.to(netRoomKey).emit("log:message", logMsg);
       }
     }
   });
@@ -118,6 +125,12 @@ export function registerFileHandlers(io: Server, socket: Socket): void {
     if (Date.now() > record.expiresAt) {
       deleteFileRecord(fileId);
       return ack({ ok: false, error: "File expired" });
+    }
+
+    // Verify requester is on the same network as the file's origin
+    const requesterNetworkId = getNetworkId(socket);
+    if (requesterNetworkId !== record.networkId) {
+      return ack({ ok: false, error: "File not found or expired" });
     }
 
     // For DMs, verify the requester is a participant

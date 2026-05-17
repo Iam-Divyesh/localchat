@@ -6,6 +6,7 @@ export interface UserInfo {
   username: string;
   room: string;
   joinedAt: number;
+  networkId: string;
 }
 
 export interface ChatMessage {
@@ -25,6 +26,7 @@ export interface FileRecord {
   mimeType: string;
   uploadedBy: string;
   room: string;
+  networkId: string;
   timestamp: number;
   expiresAt: number;
   chunks: Buffer[];
@@ -39,6 +41,7 @@ export interface FileMetadata {
   mimeType: string;
   uploadedBy: string;
   room: string;
+  networkId: string;
   timestamp: number;
   expiresAt: number;
 }
@@ -112,8 +115,8 @@ export function getLogRoom(): string { return LOG_ROOM; }
 
 // ── Rooms / users ─────────────────────────────────────────────
 
-export function joinRoom(socketId: string, username: string, room: string): void {
-  userMap.set(socketId, { id: socketId, username, room, joinedAt: Date.now() });
+export function joinRoom(socketId: string, username: string, room: string, networkId: string): void {
+  userMap.set(socketId, { id: socketId, username, room, joinedAt: Date.now(), networkId });
   if (!roomUsers.has(room)) roomUsers.set(room, new Set());
   roomUsers.get(room)!.add(socketId);
   // Maintain reverse index
@@ -295,7 +298,7 @@ export function toFileMetadata(record: FileRecord): FileMetadata {
   return {
     id: record.id, name: record.name, size: record.size,
     mimeType: record.mimeType, uploadedBy: record.uploadedBy,
-    room: record.room,
+    room: record.room, networkId: record.networkId,
     timestamp: record.timestamp, expiresAt: record.expiresAt,
   };
 }
@@ -337,4 +340,94 @@ export function connectionCountForUser(username: string): number {
 
 function dbMsgToChatMsg(m: DbMessage): ChatMessage {
   return { id: m.id, username: m.username, text: m.text, timestamp: m.timestamp, type: m.type };
+}
+
+// ── Network-scoped operations ─────────────────────────────────
+// All rooms on the server are stored with a "${networkId}:" prefix so users
+// on different public IPs are fully isolated from each other.
+
+export function createChannelInNetwork(networkId: string, name: string): boolean {
+  const clean = name.trim().toLowerCase().replace(/[^a-z0-9-_]/g, "-").slice(0, 40);
+  if (!clean || clean.startsWith("dm:")) return false;
+  const key = `${networkId}:${clean}`;
+  const isNew = !channelSet.has(key);
+  channelSet.add(key);
+  if (persistMode) dbEnsureRoom(key);
+  return isNew;
+}
+
+export function listChannelsInNetwork(networkId: string): string[] {
+  const prefix = `${networkId}:`;
+  return [...channelSet]
+    .filter((ch) => ch.startsWith(prefix))
+    .map((ch) => ch.slice(prefix.length))
+    .sort();
+}
+
+export function deleteChannelInNetwork(networkId: string, name: string): boolean {
+  if (PROTECTED.has(name)) return false;
+  const key = `${networkId}:${name}`;
+  if (!channelSet.has(key)) return false;
+  channelSet.delete(key);
+  roomMessages.delete(key);
+  roomUsers.delete(key);
+  return true;
+}
+
+export function getAllUsersInNetwork(networkId: string): UserInfo[] {
+  const seen = new Map<string, UserInfo>();
+  for (const u of userMap.values()) {
+    if (u.networkId === networkId && !seen.has(u.username)) {
+      seen.set(u.username, u);
+    }
+  }
+  return [...seen.values()];
+}
+
+export function appendLogInNetwork(networkId: string, text: string): ChatMessage {
+  const logRoom = `${networkId}:log`;
+  const msg: ChatMessage = {
+    id: randomUUID(),
+    username: "log",
+    text,
+    timestamp: Date.now(),
+    type: "system",
+  };
+  addMessage(logRoom, msg);
+  return msg;
+}
+
+export function getLogRoomInNetwork(networkId: string): string {
+  return `${networkId}:log`;
+}
+
+export function searchMessagesInNetwork(networkId: string, query: string): Array<{ room: string; msg: ChatMessage }> {
+  const prefix = `${networkId}:`;
+  const q = query.toLowerCase();
+  const results: Array<{ room: string; msg: ChatMessage }> = [];
+  for (const [room, msgs] of roomMessages) {
+    if (!room.startsWith(prefix)) continue;
+    const displayRoom = room.slice(prefix.length);
+    if (displayRoom.startsWith("dm:")) continue;
+    for (const msg of msgs) {
+      if (msg.type === "message" && msg.text.toLowerCase().includes(q)) {
+        results.push({ room: displayRoom, msg });
+      }
+    }
+  }
+  return results.slice(0, 50);
+}
+
+export function connectionCountForUserInNetwork(username: string, networkId: string): number {
+  let count = 0;
+  for (const u of userMap.values()) {
+    if (u.username === username && u.networkId === networkId) count++;
+  }
+  return count;
+}
+
+export function findAllSocketsByUsernameInNetwork(username: string, networkId: string): string[] {
+  const sockets = usernameToSockets.get(username);
+  if (!sockets) return [];
+  return [...sockets].filter((sid) => userMap.get(sid)?.networkId === networkId);
 }
