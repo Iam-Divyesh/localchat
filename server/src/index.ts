@@ -90,11 +90,14 @@ export function startServer(overrides: Partial<typeof config> = {}): void {
     next();
   });
 
-  // Extract client public IP for network isolation
-  // Behind Nginx, the real IP arrives via X-Forwarded-For
+  // Extract client public IP for network isolation.
+  // Nginx sets X-Real-IP ($remote_addr) and optionally X-Forwarded-For.
+  // socket.handshake.address is always 127.0.0.1 (loopback) behind a proxy.
   io.use((socket, next) => {
-    const forwarded = socket.handshake.headers["x-forwarded-for"] as string | undefined;
-    const ip = forwarded?.split(",")[0]?.trim() ?? socket.handshake.address;
+    const headers = socket.handshake.headers;
+    const forwarded = (headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim();
+    const realIp = headers["x-real-ip"] as string | undefined;
+    const ip = forwarded ?? realIp ?? socket.handshake.address;
     (socket as unknown as Record<string, unknown>).lcNetworkId = ip;
     next();
   });
