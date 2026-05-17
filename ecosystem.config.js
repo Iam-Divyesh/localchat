@@ -6,7 +6,7 @@ module.exports = {
     node_args: "--experimental-sqlite",
     env: {
       NODE_ENV: "production",
-      PORT: 3000,
+      PORT: 5001,
     },
     restart_delay: 2000,
     max_restarts: 10,
