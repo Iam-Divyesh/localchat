@@ -20,7 +20,10 @@ jobs:
           host: 187.77.186.137
           username: root
           password: ${{ secrets.VPS_PASSWORD }}
-          timeout: 300s
+          timeout: 60s
+          command_timeout: 300s
+          retry_count: 5
+          retry_delay: 15s
           script: |
             set -e
 
