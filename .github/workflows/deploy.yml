@@ -20,7 +20,7 @@ jobs:
           host: 187.77.186.137
           username: root
           password: ${{ secrets.VPS_PASSWORD }}
-          timeout: 120s
+          timeout: 300s
           script: |
             set -e
 
@@ -94,6 +94,29 @@ jobs:
               pm2 save
 
               echo "==> Deploy complete!"
+            fi
+
+            # ── Ensure Nginx is configured (idempotent) ──────────
+            if command -v nginx &>/dev/null; then
+              cat > /etc/nginx/sites-available/localchat << 'NGINX'
+            server {
+                listen 80;
+                server_name localchat.thefinelabs.tech;
+
+                location / {
+                    proxy_pass http://localhost:3000;
+                    proxy_http_version 1.1;
+                    proxy_set_header Upgrade $http_upgrade;
+                    proxy_set_header Connection "upgrade";
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_read_timeout 86400;
+                }
+            }
+            NGINX
+              ln -sf /etc/nginx/sites-available/localchat /etc/nginx/sites-enabled/localchat
+              rm -f /etc/nginx/sites-enabled/default
+              nginx -t && systemctl reload nginx
             fi
 
             pm2 list
