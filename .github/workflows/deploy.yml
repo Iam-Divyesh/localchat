@@ -26,16 +26,21 @@ jobs:
 
             APP_DIR="/var/www/localchat"
 
+            # ── Ensure Node.js 22 + git are present ──────────────
+            if ! command -v node &>/dev/null || [ "$(node -e 'process.stdout.write(process.version.split(\".\")[0].slice(1))')" -lt 22 ]; then
+              echo "==> Installing Node.js 22.x..."
+              apt-get update -q
+              apt-get install -y -q curl git
+              curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+              apt-get install -y nodejs
+            fi
+
             # ── First-time setup ─────────────────────────────────
             if [ ! -d "$APP_DIR" ]; then
               echo "==> First-time setup..."
 
               apt-get update -q
-              apt-get install -y -q git curl
-
-              # Install Node.js 22.x
-              curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-              apt-get install -y nodejs
+              apt-get install -y -q git
 
               mkdir -p /var/www
               git clone https://github.com/Iam-Divyesh/localchat $APP_DIR
