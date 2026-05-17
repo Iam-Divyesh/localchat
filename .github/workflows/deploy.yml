@@ -26,6 +26,9 @@ jobs:
 
             APP_DIR="/var/www/localchat"
 
+            # ── Ensure npm global bin is in PATH (SSH sessions may lack it) ──
+            export PATH="$(npm prefix -g)/bin:$PATH"
+
             # ── Ensure Node.js 22 + git are present ──────────────
             if ! command -v node &>/dev/null || [ "$(node -e 'process.stdout.write(process.version.split(\".\")[0].slice(1))')" -lt 22 ]; then
               echo "==> Installing Node.js 22.x..."
@@ -33,6 +36,11 @@ jobs:
               apt-get install -y -q curl git
               curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
               apt-get install -y nodejs
+            fi
+
+            # ── Ensure pm2 is installed ──────────────────────────
+            if ! command -v pm2 &>/dev/null; then
+              npm install -g pm2
             fi
 
             # ── First-time setup ─────────────────────────────────
