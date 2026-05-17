@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import AuthScreen from "./components/AuthScreen";
-import JoinScreen from "./components/JoinScreen";
+import NamePickerScreen from "./components/NamePickerScreen";
 import Sidebar from "./components/Sidebar";
 import MessageList from "./components/MessageList";
 import ChatInput from "./components/ChatInput";
@@ -12,7 +11,6 @@ import { useChat } from "./hooks/useChat";
 import { useFiles } from "./hooks/useFiles";
 import { useSocketStatus } from "./hooks/useSocket";
 import { initSocket, disconnectSocket } from "./lib/socket";
-import { getMe, logout, AuthUser } from "./lib/api";
 import { dmRoomKey } from "./lib/dmRoom";
 import { Search, Menu } from "lucide-react";
 
@@ -20,12 +18,11 @@ type ActiveView =
   | { type: "room"; room: string }
   | { type: "dm"; roomId: string; peer: string };
 
-type AppState = "loading" | "auth" | "join" | "chat";
+type AppState = "loading" | "pick-name" | "chat";
 
 export default function App() {
   const [appState, setAppState] = useState<AppState>("loading");
-  const [token, setToken] = useState<string | null>(null);
-  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
   const [room, setRoom] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<ActiveView | null>(null);
   const [replyTo, setReplyTo] = useState<{ id: string; username: string; text: string } | null>(null);
@@ -35,66 +32,38 @@ export default function App() {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => localStorage.getItem("lc_sound") !== "false");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // On mount — check for existing session
+  // On mount — check for existing name
   useEffect(() => {
-    const stored = localStorage.getItem("lc_token");
-    if (!stored) { setAppState("auth"); return; }
-
-    getMe(stored).then((user) => {
-      if (!user) {
-        localStorage.removeItem("lc_token");
-        setAppState("auth");
-        return;
-      }
-      setToken(stored);
-      setAuthUser(user);
-      initSocket(stored);
-      const lastRoom = sessionStorage.getItem("lc_room");
-      if (lastRoom) {
-        setRoom(lastRoom);
-        setActiveView({ type: "room", room: lastRoom });
-        setAppState("chat");
-      } else {
-        setAppState("join");
-      }
-    });
-  }, []);
-
-  const handleAuth = useCallback((t: string, user: AuthUser) => {
-    setToken(t);
-    setAuthUser(user);
-    initSocket(t);
-    setAppState("join");
-  }, []);
-
-  const handleJoin = useCallback((r: string) => {
-    sessionStorage.setItem("lc_room", r);
-    setRoom(r);
-    setActiveView({ type: "room", room: r });
+    const stored = localStorage.getItem("lc_username");
+    if (!stored) { setAppState("pick-name"); return; }
+    setUsername(stored);
+    initSocket(stored);
+    const lastRoom = sessionStorage.getItem("lc_room") ?? "general";
+    setRoom(lastRoom);
+    setActiveView({ type: "room", room: lastRoom });
     setAppState("chat");
   }, []);
 
-  const handleLogout = useCallback(async () => {
-    if (token) await logout(token).catch(() => {});
-    localStorage.removeItem("lc_token");
+  const handleNamePick = useCallback((name: string) => {
+    localStorage.setItem("lc_username", name);
+    setUsername(name);
+    initSocket(name);
+    const startRoom = "general";
+    sessionStorage.setItem("lc_room", startRoom);
+    setRoom(startRoom);
+    setActiveView({ type: "room", room: startRoom });
+    setAppState("chat");
+  }, []);
+
+  const handleChangeName = useCallback(() => {
+    localStorage.removeItem("lc_username");
     sessionStorage.removeItem("lc_room");
     disconnectSocket();
-    setToken(null);
-    setAuthUser(null);
+    setUsername(null);
     setRoom(null);
     setActiveView(null);
-    setAppState("auth");
-  }, [token]);
-
-  // Handle socket auth errors (expired/invalid token) — force logout
-  useEffect(() => {
-    const handler = () => handleLogout();
-    window.addEventListener("lc:auth_error", handler);
-    return () => window.removeEventListener("lc:auth_error", handler);
-  }, [handleLogout]);
-
-  const connected = useSocketStatus();
-  const username = authUser?.username ?? null;
+    setAppState("pick-name");
+  }, []);
 
   // When a channel is deleted, redirect to general if we're in it
   const handleChannelDeleted = useCallback((name: string) => {
@@ -117,8 +86,8 @@ export default function App() {
   } = useChat(appState === "chat" ? room : null, username, handleChannelDeleted);
 
   const { uploadFile, downloadFile, fetchBlob, uploads } = useFiles();
+  const connected = useSocketStatus();
 
-  // Notification sound — play a soft beep on new message / mention
   const playSound = useCallback(() => {
     if (!soundEnabled) return;
     try {
@@ -210,7 +179,9 @@ export default function App() {
   }, []);
 
   const handleUsernameChanged = useCallback((newUsername: string) => {
-    setAuthUser((prev) => prev ? { ...prev, username: newUsername } : prev);
+    setUsername(newUsername);
+    disconnectSocket();
+    initSocket(newUsername);
   }, []);
 
   const handleProfileClick = useCallback(async (targetUsername: string) => {
@@ -218,7 +189,6 @@ export default function App() {
     setProfileUser({ username: targetUsername, email: profile?.email, online: profile?.online ?? false });
   }, [getUserProfile]);
 
-  // Keyboard shortcut: Ctrl+K or Cmd+K to open search
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
@@ -240,17 +210,15 @@ export default function App() {
     );
   }
 
-  if (appState === "auth") {
-    return <AuthScreen onAuth={handleAuth} />;
+  if (appState === "pick-name") {
+    return <NamePickerScreen onJoin={handleNamePick} />;
   }
 
-  if (appState === "join" || !activeView || !room) {
+  if (!activeView || !room) {
     return (
-      <JoinScreen
-        username={username ?? ""}
-        onJoin={handleJoin}
-        onLogout={handleLogout}
-      />
+      <div className="fixed inset-0 flex items-center justify-center" style={{ background: "var(--bg)" }}>
+        <div className="spinner" />
+      </div>
     );
   }
 
@@ -282,11 +250,9 @@ export default function App() {
           onClose={() => setProfileUser(null)}
         />
       )}
-      {showSettings && token && authUser && (
+      {showSettings && username && (
         <SettingsModal
-          token={token}
-          currentUsername={authUser.username}
-          email={authUser.email}
+          currentUsername={username}
           soundEnabled={soundEnabled}
           onSoundToggle={handleSoundToggle}
           onUsernameChanged={handleUsernameChanged}
@@ -321,7 +287,7 @@ export default function App() {
           onCreateChannel={createChannel}
           onDeleteChannel={deleteChannel}
           onOpenDm={handleOpenDm}
-          onLogout={handleLogout}
+          onLogout={handleChangeName}
           connected={connected}
           mentions={mentions}
           onDismissMention={dismissMention}
@@ -335,7 +301,6 @@ export default function App() {
           className="flex items-center gap-3 px-5 py-3.5 flex-shrink-0"
           style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}
         >
-          {/* Hamburger — mobile only */}
           <button
             className="md:hidden icon-btn flex-shrink-0"
             onClick={() => setSidebarOpen(true)}
@@ -365,7 +330,6 @@ export default function App() {
           )}
         </div>
 
-        {/* Pinned message banner */}
         {!isDm && pinnedMessage && (
           <PinnedBanner
             pinned={pinnedMessage}

@@ -265,7 +265,7 @@ export default function Sidebar({
         <button
           onClick={onLogout}
           className="icon-btn"
-          title="Sign out"
+          title="Change name"
           onMouseEnter={(e) => (e.currentTarget.style.color = "var(--error)")}
           onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
         >

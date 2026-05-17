@@ -8,16 +8,14 @@ import { registerChatHandlers, logUserJoined } from "./socket/chat.js";
 import { registerFileHandlers, startFileExpiry } from "./socket/files.js";
 import { startMdns, stopMdns } from "./discovery/mdns.js";
 import { startUdpBroadcast, stopUdpBroadcast, getLocalIpExport } from "./discovery/udpBroadcast.js";
-import { initDb, closeDb, validateSession } from "./db/database.js";
+import { initDb, closeDb } from "./db/database.js";
 import { setPersistMode, connectionCountForUser, getAllUsers } from "./store/rooms.js";
-import authRouter from "./routes/auth.js";
 
 export function startServer(overrides: Partial<typeof config> = {}): void {
   const cfg = { ...config, ...overrides };
 
-  // Always init DB — needed for auth even without persist mode
-  initDb(cfg.dataDir);
   if (cfg.persist) {
+    initDb(cfg.dataDir);
     setPersistMode(true);
     console.log("[db] Message persistence enabled");
   }
@@ -31,9 +29,6 @@ export function startServer(overrides: Partial<typeof config> = {}): void {
   });
 
   app.use(express.json());
-
-  // Auth routes
-  app.use("/api/auth", authRouter);
 
   // Serve built React client
   // When installed via npm/GitHub, client-dist/ is bundled inside the server package.
@@ -86,14 +81,12 @@ export function startServer(overrides: Partial<typeof config> = {}): void {
     res.sendFile(path.join(clientDist, "index.html"));
   });
 
-  // Socket.IO auth middleware — validate session token
+  // Socket.IO middleware — accept username directly (no login required)
   io.use((socket, next) => {
-    const token = socket.handshake.auth?.token as string | undefined;
-    if (!token) return next(new Error("AUTH_REQUIRED"));
-    const user = validateSession(token);
-    if (!user) return next(new Error("AUTH_INVALID"));
-    // Attach user info to socket for handlers
-    (socket as unknown as Record<string, unknown>).lcUser = user;
+    const username = (socket.handshake.auth?.username as string | undefined)?.trim();
+    if (!username || username.length < 2 || username.length > 30) return next(new Error("AUTH_REQUIRED"));
+    if (!/^[a-zA-Z0-9 _-]+$/.test(username)) return next(new Error("AUTH_INVALID"));
+    (socket as unknown as Record<string, unknown>).lcUser = { username };
     next();
   });
 
@@ -142,7 +135,7 @@ export function startServer(overrides: Partial<typeof config> = {}): void {
     console.log("\nShutting down...");
     stopMdns();
     stopUdpBroadcast();
-    closeDb();
+    if (cfg.persist) closeDb();
     server.close(() => process.exit(0));
   }
 

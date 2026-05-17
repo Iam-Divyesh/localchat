@@ -14,7 +14,7 @@
   ],
   "scripts": {
     "build:client": "cd client && npm install && npm run build",
-    "build:server": "cd server && npx tsc && xcopy /E /I /Y dist\\* ..\\lib\\",
+    "build:server": "cd server && npx tsc",
     "build:all": "npm run build:client && npm run build:server",
     "start": "node lib/cli.js start"
   },
