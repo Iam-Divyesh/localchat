@@ -34,8 +34,8 @@ export function startServer(overrides: Partial<typeof config> = {}): void {
   // When installed via npm/GitHub, client-dist/ is bundled inside the server package.
   // Locally it falls back to the sibling client/dist for dev convenience.
   const clientDist = (() => {
-    const bundled = path.resolve(__dirname, "..", "..", "public");
-    const local = path.resolve(__dirname, "..", "..", "client", "dist");
+    const bundled = path.resolve(__dirname, "..", "public");
+    const local = path.resolve(__dirname, "..", "client", "dist");
     const fs = require("fs") as typeof import("fs");
     return fs.existsSync(bundled) ? bundled : local;
   })();
